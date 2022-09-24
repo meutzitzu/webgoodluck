@@ -49,17 +49,24 @@ vec3 grad( vec3 pos)
 	return (n);
 }
 
-float rayMarch( vec3 ro, vec3 rd)
+vec4 rayMarch( vec3 ro, vec3 rd)
 {
 	float d0 = 0.;
-	for (int i=0; i<MAX_STEPS; ++i)
+	float dm = MAX_DIST;
+	float a = 1.0;
+	float n = 0.0;
+	int i=0;
+	for (i=0; i<MAX_STEPS; ++i)
 	{
 		vec3 p = ro + d0*rd;
 		float dS = SceneSDF(p);
+		dm = min(dm, dS);
+		a = min(a, dS/(sqrt(d0*d0+dS*dS)));
 		d0 += dS;
 		if(dS<SURFACE_DIST || dS>MAX_DIST) break;
 	}
-	return d0;
+	n = float(i)/float(MAX_STEPS);
+	return vec4(d0, dm, n, a);
 }
 
 float light(vec3 pos)
@@ -70,9 +77,9 @@ float light(vec3 pos)
 	vec3 n = normalize(grad(pos));
 
 	float diff = clamp(dot(n,l), 0.0, 1.0);
-	float d = rayMarch(pos + n * 2.0 * SURFACE_DIST, l);
+	vec4 rM = rayMarch(pos + n * 2.0 * SURFACE_DIST, l);
 	
-	diff *= ( d < length(light_origin - pos) ? 0.2 : 1.0);
+	diff *= ( rM.r < length(light_origin - pos) ? 0.5 + rM.a : 1.0);
 
 	return diff;
 }
@@ -94,10 +101,11 @@ void main() {
 	vec3 ro = vec3(0.0, 1.0, 0.0);
 	vec3 rd = normalize(vec3(uv.x, uv.y, 1));
 
-	float d = rayMarch(ro, rd);
-	vec3 p = ro + rd*d;
+	vec4 rM = rayMarch(ro, rd);
+	vec3 p = ro + rd*rM.r;
 	float diff = light(p);
-	
+	float ao = rM.b;
+	float bloom = rM.g;
 	vec3 col = vec3(diff);
 
 	outColor = vec4(col, 1);

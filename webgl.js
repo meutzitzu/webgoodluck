@@ -51,7 +51,7 @@ function main() {
 		})
 		.then((values) => 
 		{
-			console.log(values);
+		//	console.log(values);
 			let program = createProgram(gl,
 				createShader(gl, gl.VERTEX_SHADER, values[0]),
 				createShader(gl, gl.FRAGMENT_SHADER, values[1])
