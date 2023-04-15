@@ -58,6 +58,8 @@ function main() {
 			);
 			let timeUniformLocation = gl.getUniformLocation(program, "u_time"); 
 
+			let mouseUniformLocation = gl.getUniformLocation(program, "u_mouse"); 
+
 			let resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution")
 
 			let positionAttributeLocation = gl.getAttribLocation(program, "a_position");
@@ -107,6 +109,7 @@ function main() {
 			var primitiveType = gl.TRIANGLES;
 			var offset = 0;
 			var count = 6;
+
 			function renderLoop(timeStamp) { 
 		// set time uniform
 				gl.useProgram(program);
@@ -118,27 +121,22 @@ function main() {
 				gl.drawArrays(primitiveType, offset, count);
 				
 		// recursive invocation
+			
+			function mouseMove( event )
+			{
+				gl.uniform2f(mouseUniformLocation, event.clientX, event.clientY);
+			}
+
+			canvas.addEventListener("mousemove", mouseMove, false);
+      
+      //recursive call to renderLoop
 			window.requestAnimationFrame(renderLoop);
 		
 			}
-			//gl.drawArrays(primitiveType, offset, count);
+
+			// begin the render loop
 			window.requestAnimationFrame(renderLoop);
 		})
-	//var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-	//var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-	
-	
-	
-	
-// Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
-	
-	// Create a vertex array object (attribute state)
-	
-	// and make it the one we're currently working with
-	
-	// Turn on the attribute
-	
-	// Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
 }
 
 main();
