@@ -19,6 +19,9 @@ int MSAA = 4;
 float SURFACE_DIST = 0.000001;
 float MAX_DIST = 100.0;
 
+vec3 BoxColor = vec3(1.0, 0.0, 0.0);
+vec3 SphereColor = vec3(0.0, 0.0, 1.0);
+
 float random (vec2 st)
 {
     return fract( sin( dot( st.xy, vec2( 12.9898, 78.233))) * 43758.5453123) - 0.5;
@@ -68,6 +71,25 @@ float SceneSDF( vec3 pos)
 				vec3(1.0)
 			) - 0.25
 		);
+}
+
+vec3 SceneColor( vec3 pos)
+{
+    float d = SceneSDF(pos);
+    if ( d == 
+			-SphereSDF(
+				pos, 
+				vec3(0.0), 
+				1.5
+				))
+		return SphereColor;
+	else if ( d ==
+			BoxSDF(
+				pos,
+				vec3(1.0)
+			) - 0.25 )
+		return BoxColor;
+	else return vec3(0.0);
 }
 
 vec3 grad( vec3 pos)
@@ -154,7 +176,8 @@ void main() {
 	float diff = light(p);
 	float ao = rM.b;
 	float bloom = rM.g;
-	vec3 col = vec3(mix(vec3(0.0, 1.0, 1.0),vec3(1.0, 1.0, 0.0),diff));
+//	vec3 col = vec3(mix(vec3(0.0, 1.0, 1.0),vec3(1.0, 1.0, 0.0),diff));
+    vec3 col = SceneColor(p);
 	if (rM.r>MAX_DIST){
 			float checker = (
 				(mod(
