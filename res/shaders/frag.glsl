@@ -13,9 +13,12 @@ out vec4 outColor;
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
+//uniform vec2 u_texUV;
+uniform sampler2D u_cursed;
+uniform sampler2D u_prusa;
 
 int MAX_STEPS = 64;
-int MSAA = 4;
+int MSAA = 1;
 float SURFACE_DIST = 0.000001;
 float MAX_DIST = 100.0;
 
@@ -82,13 +85,15 @@ vec3 SceneColor( vec3 pos)
 				vec3(0.0), 
 				1.5
 				))
+//		return texture(u_space, vec2(atan(pos.z),atan(pos.y,pos.x))).rgb;
 		return SphereColor;
 	else if ( d ==
 			BoxSDF(
 				pos,
 				vec3(1.0)
 			) - 0.25 )
-		return BoxColor;
+		return texture(u_prusa, vec2(atan(pos.z),atan(pos.y,pos.x))).rgb;
+//		return BoxColor;
 	else return vec3(0.0);
 }
 
@@ -179,22 +184,18 @@ void main() {
 //	vec3 col = vec3(mix(vec3(0.0, 1.0, 1.0),vec3(1.0, 1.0, 0.0),diff));
     vec3 col = SceneColor(p);
 	if (rM.r>MAX_DIST){
-			float checker = (
+			vec2 checker = vec2(
 				(mod(
-					(32.0/PI)*atan(rd.z/length(vec2(rd.xy)))
-					,2.0
-				) - 1.0)
-				*
+					(1.0/PI)*atan(rd.z/length(vec2(rd.xy)))
+					,1.0
+				))
+				,
 				(mod(
-					(32.0/PI)*atan(rd.y,rd.x)
-					,2.0
-				) - 1.0)
+					(1.0/PI)*atan(rd.y,rd.x)
+					,1.0
+				))
 			);
-		col = mix(
-			vec3(-0.3*rd),
-			vec3(0.1*rd),
-			0.8*(checker*checker)
-		);
+		col = texture(u_cursed,checker).rgb;
 	}
 	outColor = vec4(col, 1);
 }
