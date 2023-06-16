@@ -4,8 +4,6 @@
 // to pick one. highp is a good default. It means "high precision"
 precision highp float;
 
-#define union min
-#define isect max
 #define PI 3.141592
 
 // we need to declare an output for the fragment shader
@@ -17,8 +15,14 @@ uniform float u_time;
 uniform sampler2D u_cursed;
 uniform sampler2D u_prusa;
 
+<<<<<<< HEAD:res/shaders/frag.glsl
 int MAX_STEPS = 64;
 int MSAA = 1;
+=======
+int MAX_STEPS = 256;
+int MSAA = 4;
+float STEP_SIZE = 0.8;
+>>>>>>> e8eff3a (plm):frag.glsl
 float SURFACE_DIST = 0.000001;
 float MAX_DIST = 100.0;
 
@@ -27,7 +31,7 @@ vec3 SphereColor = vec3(0.0, 0.0, 1.0);
 
 float random (vec2 st)
 {
-    return fract( sin( dot( st.xy, vec2( 12.9898, 78.233))) * 43758.5453123) - 0.5;
+	return fract( sin( dot( st.xy, vec2( 12.9898, 78.233))) * 43758.5453123) - 0.5;
 }
 
 float SphereSDF( vec3 pos, vec3 origin, float radius)
@@ -35,16 +39,21 @@ float SphereSDF( vec3 pos, vec3 origin, float radius)
 	return length(origin - pos) - radius;
 }
 
+float CylinderSDF(vec3 pos, float radius)
+{
+	return length(pos.xy) - radius;
+}
+
 float OctahedronSDF( vec3 p, float s)
 {
   p = abs(p);
   float m = p.x+p.y+p.z-s;
   vec3 q;
-       if( 3.0*p.x < m ) q = p.xyz;
+	   if( 3.0*p.x < m ) q = p.xyz;
   else if( 3.0*p.y < m ) q = p.yzx;
   else if( 3.0*p.z < m ) q = p.zxy;
   else return m*0.57735027;
-    
+	
   float k = clamp(0.5*(q.z-q.y+s),0.0,s); 
   return length(vec3(q.x,q.y-s+k,q.z-k)); 
 }
@@ -60,8 +69,61 @@ float GroundSDF( vec3 pos)
 	return pos.z;
 }
 
+float dirac_abs( float a, float e)
+{
+	return sqrt(a*a + e);
+}
+
+float dirac_sgn(float a, float e)
+{
+	return 1.0/dirac_abs(a,e);
+}
+
+float dirac_delta(float a, float e)
+{
+	return e/pow((a*a+e),1.5); 
+}
+
+float dirac_min(float a, float b, float e)
+{
+	return 0.5*(a + b - dirac_abs(a-b,e));
+}
+
+float chamfer_min( float a, float b, float h)
+{
+	return 0.5*(a + b - max(abs(a-b),h));
+}
+
+/*
+float fillet_min(float a, float b, float f)
+{
+	return (abs(a-b)>=f) ? min(a,b) : 0.5*(a + b -(2.0*f-sqrt(f*f*2));
+}
+*/
+
+
+float TurnerCube( vec3 pos, float size, float radius)
+{
+	return
+	max
+	(
+		BoxSDF(pos, vec3(size))-0.15,
+		-min
+		(
+		CylinderSDF(pos, radius),
+		min
+		(
+			CylinderSDF(pos.yzx, radius),
+			CylinderSDF(pos.zxy, radius)
+		)
+		)
+	)
+	;
+}
+
 float SceneSDF( vec3 pos)
 {
+<<<<<<< HEAD:res/shaders/frag.glsl
 	return 
 		max(
 			-SphereSDF(
@@ -74,10 +136,27 @@ float SceneSDF( vec3 pos)
 				vec3(1.0)
 			) - 0.25
 		);
+=======
+	return
+	max
+	(
+		abs
+		(
+		chamfer_min
+		(
+			CylinderSDF(pos.yzx, 1.0),
+			CylinderSDF(pos.zxy, 1.0),
+		0.2)
+		+0.05) -0.05,
+		BoxSDF(pos + vec3(0.0, 0.0, 2.0), vec3(2.0))
+	)
+	;
+>>>>>>> e8eff3a (plm):frag.glsl
 }
 
 vec3 SceneColor( vec3 pos)
 {
+<<<<<<< HEAD:res/shaders/frag.glsl
     float d = SceneSDF(pos);
     if ( d == 
 			-SphereSDF(
@@ -95,6 +174,17 @@ vec3 SceneColor( vec3 pos)
 		return texture(u_prusa, vec2(atan(pos.z),atan(pos.y,pos.x))).rgb;
 //		return BoxColor;
 	else return vec3(0.0);
+=======
+	float d = SceneSDF(pos);
+	return
+	mix
+	(
+		SphereColor,
+		BoxColor,
+		clamp( sign(min(abs(CylinderSDF(pos.yzx, 1.0)+0.05),abs(CylinderSDF(pos.zxy, 1.0)+0.05))-d),0.,1.)
+	)
+	;
+>>>>>>> e8eff3a (plm):frag.glsl
 }
 
 vec3 grad( vec3 pos)
@@ -123,7 +213,7 @@ vec4 rayMarch( vec3 ro, vec3 rd)
 		float dS = SceneSDF(p);
 		dm = min(dm, dS);
 		a = min(a, dS/(sqrt(d0*d0+dS*dS)));
-		d0 += dS;
+		d0 += dS*STEP_SIZE;
 		if(dS<SURFACE_DIST || dS>MAX_DIST) break;
 	}
 	n = float(i)/float(MAX_STEPS);
@@ -181,8 +271,9 @@ void main() {
 	float diff = light(p);
 	float ao = rM.b;
 	float bloom = rM.g;
-//	vec3 col = vec3(mix(vec3(0.0, 1.0, 1.0),vec3(1.0, 1.0, 0.0),diff));
-    vec3 col = SceneColor(p);
+	vec3 col = vec3(mix(0.5*(SceneColor(p) + 0.2*vec3(0.0, 0.5, 0.5)),0.5*(SceneColor(p) + 0.4*vec3(1.0, 1.0, 0.5)),diff));
+//  vec3 col = SceneColor(p);
+//	col = vec3(diff);
 	if (rM.r>MAX_DIST){
 			vec2 checker = vec2(
 				(mod(
