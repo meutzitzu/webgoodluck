@@ -1,4 +1,6 @@
+
 "use strict";
+
 
 function createShader(gl, type, source) {
 	var shader = gl.createShader(type);
@@ -290,7 +292,7 @@ function main() {
 				gl.useProgram(program);
 				gl.bindVertexArray(vao);
 				gl.uniform1f(timeUniformLocation, time/1000.0);
-				gl.uniform2f(resolutionUniformLocation, 1080, 1080);
+				gl.uniform2f(resolutionUniformLocation, targetTextureWidth, 1080);
 				gl.uniform1i(textureCursedLocation, 0);
 				gl.drawArrays(primitiveType, offset, count);
 			}
@@ -306,14 +308,22 @@ function main() {
 			}
 			let frameNum = 0;
 			
-			gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
+			webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 			gl.bindTexture(gl.TEXTURE_2D, prusaTexture)
-			gl.viewport(0, 0, 1080, 1080);
+			gl.framebufferTexture2D
+			(
+				gl.FRAMEBUFFER,
+				attPoint,
+				gl.TEXTURE_2D,
+				rendTex1,
+				level
+			);
+			gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
 			// Clear the canvas
 			gl.clearColor(0, 0, 0, 1);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			render2screen(0.0);
-			
+
 			function renderLoop(timeStamp)
 			{ 
 				frameNum++;
@@ -333,7 +343,7 @@ function main() {
 						rendTex1,
 						level
 					);
-					gl.viewport(0, 0, 1080, 1080);
+					gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
 					// Clear the canvas
 					gl.clearColor(0, 0, 0, 1);
 					gl.clear(gl.COLOR_BUFFER_BIT);
@@ -350,7 +360,7 @@ function main() {
 						rendTex0,
 						level
 					);
-					gl.viewport(0, 0, 1080, 1080);
+					gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
 					// Clear the canvas
 					gl.clearColor(0, 0, 0, 1);
 					gl.clear(gl.COLOR_BUFFER_BIT);
