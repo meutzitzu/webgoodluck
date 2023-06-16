@@ -136,12 +136,12 @@ function main() {
 			gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 			
 			var positions = [
-				-1.0, -1.0,
-				-1.0,	1.0,
-				 1.0,	1.0,
-				-1.0, -1.0,
-				 1.0, -1.0,
-				 1.0,	1.0,
+				-1.0,	-1.0,
+				-1.0,	 1.0,
+				 1.0,	 1.0,
+				-1.0,	-1.0,
+				 1.0,	-1.0,
+				 1.0,	 1.0,
 			];
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
@@ -154,7 +154,8 @@ function main() {
 			var stride = 0;				// 0 = move forward size * sizeof(type) each iteration to get the next position
 			var offset = 0;				// start at the beginning of the buffer
 			gl.vertexAttribPointer(
-					positionAttributeLocation, size, type, normalize, stride, offset);
+				positionAttributeLocation, size, type, normalize, stride, offset
+			);
 			
 		// Tell WebGL how to convert from clip space to pixels
 			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -163,20 +164,18 @@ function main() {
 			gl.clearColor(0, 0, 0, 0);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			
-			 gl.activeTexture(gl.TEXTURE0);
-				 gl.bindTexture(gl.TEXTURE_2D, texture);
+		// Create and bind a texture.
+			var texture = gl.createTexture();
 			
-			 // Create a texture.
-				 var texture = gl.createTexture();
+			/*
+			// use texture unit 0
+			gl.activeTexture(gl.TEXTURE0 + 0);
 
-				 // use texture unit 0
-				 gl.activeTexture(gl.TEXTURE0 + 0);
-
-				 // bind to the TEXTURE_2D bind point of texture unit 0
-				 gl.bindTexture(gl.TEXTURE_2D, texture);
+			// bind to the TEXTURE_2D bind point of texture unit 0
+			gl.bindTexture(gl.TEXTURE_2D, texture);
 
 				 // fill texture with 3x2 pixels
-				 {
+				{
 					 const level = 0;
 					 const internalFormat = gl.R8;
 					 const width = 3;
@@ -185,26 +184,31 @@ function main() {
 					 const format = gl.RED;
 					 const type = gl.UNSIGNED_BYTE;
 					 const data = new Uint8Array([
-						 128,	64, 128,
-							 0, 192,	 0,
+						 128,  64, 128,
+						   0, 192,   0,
 					 ]);
 					 gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 					 gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border,
 												 format, type, data);
-				 }
+				}
 
-				 // set the filtering so we don't need mips
+				 // set the filtering so we don't get a black fucking screen with no errors or other signs we did anything wrong. (Too bad)
 				 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 				 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 				 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			*/
 			
-
-			// Create a texture to render to
+			// use texture unit 0
+			gl.activeTexture(gl.TEXTURE0);
+			
+			// set the size of all of our compute textures
 			const targetTextureWidth = 1080;
-				const targetTextureHeight = 1080;
-			const rendTex = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, rendTex);	 
+			const targetTextureHeight = 1080;
+
+			// Create the first texture to render to
+			const rendTex0 = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, rendTex0);	 
 			{
 				// define size and format of level 0
 				const level = 0;
@@ -213,9 +217,16 @@ function main() {
 				const format = gl.RGBA;
 				const type = gl.UNSIGNED_BYTE;
 				const data = null;
-				gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-											targetTextureWidth, targetTextureHeight, border,
-											format, type, data);
+				gl.texImage2D(
+					gl.TEXTURE_2D, 
+					level, 
+					internalFormat,
+					targetTextureWidth, targetTextureHeight, 
+					border,
+					format, 
+					type, 
+					data
+				);
 				
 				// set the filtering so we don't need mips
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -223,26 +234,57 @@ function main() {
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			}
 			
+			const rendTex1 = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, rendTex1);	 
+			{
+				// define size and format of level 0
+				const level = 0;
+				const internalFormat = gl.RGBA;
+				const border = 0;
+				const format = gl.RGBA;
+				const type = gl.UNSIGNED_BYTE;
+				const data = null;
+				gl.texImage2D(
+					gl.TEXTURE_2D, 
+					level, 
+					internalFormat,
+					targetTextureWidth, targetTextureHeight, 
+					border,
+					format, 
+					type, 
+					data
+				);
+				
+				// set the filtering so we don't need mips
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			}
+
+			//unbind textures
+			gl.bindTexture(gl.TEXTURE_2D, null);	 
+			
 			// Create and bind the framebuffer
 			const fbuff = gl.createFramebuffer();
 			gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
 			
 			// attach the texture as the first color attachment
-			const attachmentPoint = gl.COLOR_ATTACHMENT0;
+			const attPoint = gl.COLOR_ATTACHMENT0;
 			const level = 0;
 			gl.framebufferTexture2D
-			 (
-					gl.FRAMEBUFFER,
-					attachmentPoint,
-					gl.TEXTURE_2D,
-					rendTex,
-					level
-			 );
+			(
+				gl.FRAMEBUFFER,
+				attPoint,
+				gl.TEXTURE_2D,
+				rendTex0,
+				level
+			);
 
 		// draw
 			var primitiveType = gl.TRIANGLES;
 			var offset = 0;
 			var count = 6;
+
 			function render2tex(time)
 			{
 				gl.useProgram(program);
@@ -252,7 +294,7 @@ function main() {
 				gl.uniform1i(textureCursedLocation, 0);
 				gl.drawArrays(primitiveType, offset, count);
 			}
-
+			
 			function render2screen(time)
 			{
 				gl.useProgram(program);
@@ -262,32 +304,68 @@ function main() {
 				gl.uniform1i(textureCursedLocation, 0);
 				gl.drawArrays(primitiveType, offset, count);
 			}
-
+			let frameNum = 0;
+			
+			gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
+			gl.bindTexture(gl.TEXTURE_2D, prusaTexture)
+			gl.viewport(0, 0, 1080, 1080);
+			// Clear the canvas
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			render2screen(0.0);
+			
 			function renderLoop(timeStamp)
 			{ 
-		// set time uniform
-
+				frameNum++;
 				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-
+			
+				// take turns rendering onto one texture or the other
+				gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
+				switch(frameNum%2)
 				{
-					gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
-					gl.bindTexture(gl.TEXTURE_2D, prusaTexture)
+				case 0: //even frame
+					gl.bindTexture(gl.TEXTURE_2D, rendTex0)
+					gl.framebufferTexture2D
+					(
+						gl.FRAMEBUFFER,
+						attPoint,
+						gl.TEXTURE_2D,
+						rendTex1,
+						level
+					);
 					gl.viewport(0, 0, 1080, 1080);
 					// Clear the canvas
 					gl.clearColor(0, 0, 0, 1);
 					gl.clear(gl.COLOR_BUFFER_BIT);
 					render2screen(timeStamp);
-				}
+				break;
 				
-				{
-					gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-					gl.bindTexture(gl.TEXTURE_2D, rendTex)
-					gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+				case 1: //odd frame
+					gl.bindTexture(gl.TEXTURE_2D, rendTex1)
+					gl.framebufferTexture2D
+					(
+						gl.FRAMEBUFFER,
+						attPoint,
+						gl.TEXTURE_2D,
+						rendTex0,
+						level
+					);
+					gl.viewport(0, 0, 1080, 1080);
 					// Clear the canvas
 					gl.clearColor(0, 0, 0, 1);
 					gl.clear(gl.COLOR_BUFFER_BIT);
 					render2screen(timeStamp);
+				break;
 				}
+				
+				// render to the screen
+				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+				gl.bindTexture(gl.TEXTURE_2D, rendTex0)
+				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+				// Clear the canvas
+				gl.clearColor(0, 0, 0, 1);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+				render2screen(timeStamp);
 				
 				function mouseMove( event )
 				{

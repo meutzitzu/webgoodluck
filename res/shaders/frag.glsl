@@ -67,7 +67,7 @@ float SceneSDF( vec3 pos)
 			-SphereSDF(
 				pos, 
 				vec3(0.0), 
-				1.5
+				1.5 + 0.2*cos(u_time)
 				),
 			BoxSDF(
 				pos,
@@ -83,7 +83,7 @@ vec3 SceneColor( vec3 pos)
 			-SphereSDF(
 				pos, 
 				vec3(0.0), 
-				1.5
+				1.5 + 0.2*cos(u_time)
 				))
 //		return texture(u_space, vec2(atan(pos.z),atan(pos.y,pos.x))).rgb;
 		return SphereColor;
