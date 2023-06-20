@@ -24,57 +24,54 @@ vec3 neighbour(vec2 offset)
 		)
 	).rgb;
 }
-
+ 
 float activation(vec3 col)
 {
-	return (col.r + col.g + col.b > 1.5 ? 1.0 : 0.0);
-	//return (col.r + col.g + col.b)/3.0;
+	//return (col.r + col.g + col.b > 1.5 ? 1.0 : 0.0);
+	return (col.r + col.g + col.b)/3.0;
 }
-
-float enviornment()
+vec3 self()
 {
-	return 
-	activation(neighbour(vec2( 1.0,  0.0))) +
-	activation(neighbour(vec2( 1.0,  1.0))) +
-	activation(neighbour(vec2( 0.0,  1.0))) +
-	activation(neighbour(vec2(-1.0,  1.0))) +
-	activation(neighbour(vec2(-1.0,  0.0))) +
-	activation(neighbour(vec2(-1.0, -1.0))) +
-	activation(neighbour(vec2( 0.0, -1.0))) +
-	activation(neighbour(vec2( 1.0, -1.0)));
+	return
+	 1.0*(neighbour(vec2( 0.0,  0.0)));
 }
 
-vec3 alive(float env)
+vec3 kernel()
 {
-	if (activation(neighbour(vec2(0.0, 0.0)))<=0.1)
-	{
-		if (env>=3.0 && env<=3.0)
-		{
-     		return vec3(0.5, 1.0, 0.5);
-		}
-	}
-	else if (env>=2.0 && env<=3.0)
-	{
-     	return vec3(0.0, 1.0, 1.0);
-	}
-	else return vec3(0.8, 0.0, 0.0);
+	return
+	  0.0*(neighbour(vec2( 0.0,  0.0))) +
+	  1.0*(neighbour(vec2( 1.0,  0.0))) +
+	  1.0*(neighbour(vec2( 1.0,  1.0))) +
+	  1.0*(neighbour(vec2( 0.0,  1.0))) +
+	  1.0*(neighbour(vec2(-1.0,  1.0))) +
+	  1.0*(neighbour(vec2(-1.0,  0.0))) +
+	  1.0*(neighbour(vec2(-1.0, -1.0))) +
+	  1.0*(neighbour(vec2( 0.0, -1.0))) +
+ 	  1.0*(neighbour(vec2( 1.0, -1.0)));
 }
-
-vec3 BoxColor = vec3(1.0, 0.0, 0.0);
-vec3 SphereColor = vec3(0.0, 0.0, 1.0);
 
 void main() {
-
+	
 	float aspect = u_resolution.x/u_resolution.y;
 	vec2 uv = vec2(gl_FragCoord.x/u_resolution.x, gl_FragCoord.y/u_resolution.y);
 	/*
 	uv -= vec2(0.5, 0.5);
 	uv.x *= aspect;
 	*/
-
+	
 	vec2 mouse_uv = (vec2(u_mouse.x/u_resolution.x, 1.0-u_mouse.y/u_resolution.y));
+	
+	float wasAlive = float(self().r>0.5);
+	
+	int notOver  = int(kernel().r <= 3.5);
+	int notUnder = int(kernel().r >= 1.5);
+	
+	float shouldSurv = float(notOver*notUnder);
+	float shouldRepr = float( (kernel().r <= 3.5) && (kernel().r >= 2.5) );
 
-	vec3 col = 1.0*vec3(alive(enviornment())) + 
-		vec3(1.0, 0.0, 1.0)*0.9*exp(-1000.0*((uv.x-mouse_uv.x)*(uv.x-mouse_uv.x)+(uv.y-mouse_uv.y)*(uv.y-mouse_uv.y)));
+	float isAlive = wasAlive*shouldSurv + (1.0-wasAlive)*(shouldRepr);
+	
+	vec3 col = 1.0*vec3(isAlive) + 
+		1.0*vec3(1.0, 0.0, 1.0)*0.9*exp(-1000.0*((uv.x-mouse_uv.x)*(uv.x-mouse_uv.x)+(uv.y-mouse_uv.y)*(uv.y-mouse_uv.y)));
 	outColor = vec4(col, 1);
 }

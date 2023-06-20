@@ -105,7 +105,7 @@ function main() {
 		return;
 	}
 	
-	let prusaTexture = loadTexture(gl, './res/tex/prusa.jpg');
+	let prusaTexture = loadTexture(gl, './res/tex/single.png');
 
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	//	promise-land ahead
@@ -184,9 +184,11 @@ function main() {
 			gl.activeTexture(gl.TEXTURE0);
 			
 			// set the size of all of our compute textures
-			const targetTextureWidth = 1080;
-			const targetTextureHeight = 1080;
-
+			const targetTextureWidth = 117;
+			const targetTextureHeight = 169;
+			
+			//hopefully this will un-fuck things  spoilers: it did not ! Too bad!
+			gl.disable(gl.BLEND);
 			// Create the first texture to render to
 			const rendTex0 = gl.createTexture();
 			gl.bindTexture(gl.TEXTURE_2D, rendTex0);	 
@@ -262,15 +264,15 @@ function main() {
 				rendTex0,
 				level
 			);
-
+			
 		// draw
 			var primitiveType = gl.TRIANGLES;
 			var offset = 0;
 			var count = 6;
-
+			
 			var mouse_X = 0.0;
 			var mouse_Y = 0.0;
-
+			
 			function render2tex(time)
 			{
 				gl.useProgram(calc_program);
@@ -357,7 +359,7 @@ function main() {
 				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 				// render to the screen
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-				gl.bindTexture(gl.TEXTURE_2D, rendTex0)
+				//gl.bindTexture(gl.TEXTURE_2D, rendTex0)
 				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 				// Clear the canvas
 				gl.clearColor(0, 0, 0, 1);
