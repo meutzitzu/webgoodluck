@@ -1,7 +1,6 @@
 
 "use strict";
 
-
 function createShader(gl, type, source) {
 	var shader = gl.createShader(type);
 	gl.shaderSource(shader, source);
@@ -109,277 +108,297 @@ function main() {
 
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	//	promise-land ahead
-	Promise.all([fetch("./res/shaders/vertex.glsl"), fetch("./res/shaders/view.glsl"),fetch("./res/shaders/frag.glsl")])
-		.then((values) => {
+	Promise.all([
+			fetch("./res/shaders/vertex.glsl"),
+			fetch("./res/shaders/view.glsl"),
+			fetch("./res/shaders/frag.glsl")
+	]).then((values) => {
 			let result = [];
 			for (const i in values){
 				result.push(values[i].text());
 			}
 			return Promise.all(result);
-		})
-		.then((values) => 
+	})
+	.then((values) => {
+		//console.log(values);
+		let view_program = createProgram(gl,
+			createShader(gl, gl.VERTEX_SHADER, values[0]),
+			createShader(gl, gl.FRAGMENT_SHADER, values[1])
+		);
+
+		let calc_program = createProgram(gl,
+			createShader(gl, gl.VERTEX_SHADER, values[0]),
+			createShader(gl, gl.FRAGMENT_SHADER, values[2])
+		);
+		
+		let viewUnis = 
 		{
-			//console.log(values);
-			let view_program = createProgram(gl,
-				createShader(gl, gl.VERTEX_SHADER, values[0]),
-				createShader(gl, gl.FRAGMENT_SHADER, values[1])
-			);
+			time : gl.getUniformLocation(view_program, "u_time"), 
+			mouse : gl.getUniformLocation(view_program, "u_mouse"), 
+			resolution : gl.getUniformLocation(view_program, "u_resolution"),
+			position : gl.getAttribLocation(view_program, "a_position"),
+			textureCursed : gl.getUniformLocation(view_program, "u_cursed"),
+		};
 
-			let calc_program = createProgram(gl,
-				createShader(gl, gl.VERTEX_SHADER, values[0]),
-				createShader(gl, gl.FRAGMENT_SHADER, values[2])
-			);
-			
+		let calcUnis = 
+		{
+			time : gl.getUniformLocation(calc_program, "u_time"), 
+			mouse : gl.getUniformLocation(calc_program, "u_mouse"), 
+			resolution : gl.getUniformLocation(calc_program, "u_resolution"),
+			position: gl.getAttribLocation(calc_program, "a_position"),
+			textureCursed : gl.getUniformLocation(calc_program, "u_cursed"),
+		};
+		
+		let positionBuffer = gl.createBuffer();
 
-			let timeUniformLocation = gl.getUniformLocation(calc_program, "u_time"); 
-			let mouseUniformLocation = gl.getUniformLocation(calc_program, "u_mouse"); 
-			let resolutionUniformLocation = gl.getUniformLocation(calc_program, "u_resolution")
-			let positionAttributeLocation = gl.getAttribLocation(calc_program, "a_position");
-			let textureCursedLocation = gl.getUniformLocation(calc_program, "u_cursed");
+		gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+		
+		var positions = [
+			-1.0,	-1.0,
+			-1.0,	 1.0,
+			 1.0,	 1.0,
+			-1.0,	-1.0,
+			 1.0,	-1.0,
+			 1.0,	 1.0,
+		];
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
-			let view_timeUniformLocation = gl.getUniformLocation(view_program, "u_time"); 
-			let view_mouseUniformLocation = gl.getUniformLocation(view_program, "u_mouse"); 
-			let view_resolutionUniformLocation = gl.getUniformLocation(view_program, "u_resolution")
-			let view_positionAttributeLocation = gl.getAttribLocation(view_program, "a_position");
-			let view_textureCursedLocation = gl.getUniformLocation(view_program, "u_cursed");
-			
-			let positionBuffer = gl.createBuffer();
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-			
-			var positions = [
-				-1.0,	-1.0,
-				-1.0,	 1.0,
-				 1.0,	 1.0,
-				-1.0,	-1.0,
-				 1.0,	-1.0,
-				 1.0,	 1.0,
-			];
-			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-			let vao = gl.createVertexArray();
-			gl.bindVertexArray(vao);
-			gl.enableVertexAttribArray(positionAttributeLocation);
-			var size = 2;					// 2 components per iteration
-			var type = gl.FLOAT;	 // the data is 32bit floats
-			var normalize = false; // don't normalize the data
-			var stride = 0;				// 0 = move forward size * sizeof(type) each iteration to get the next position
-			var offset = 0;				// start at the beginning of the buffer
-			gl.vertexAttribPointer(
-				positionAttributeLocation, size, type, normalize, stride, offset
-			);
-			
-		// Tell WebGL how to convert from clip space to pixels
-			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-			
-		// Clear the canvas
-			gl.clearColor(0, 0, 0, 0);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-			
-		// Create and bind a texture.
-			var texture = gl.createTexture();
-			
-			
-			// use texture unit 0
-			gl.activeTexture(gl.TEXTURE0);
-			
-			// set the size of all of our compute textures
-			const targetTextureWidth = 117;
-			const targetTextureHeight = 169;
-			
-			//hopefully this will un-fuck things  spoilers: it did not ! Too bad!
-			gl.disable(gl.BLEND);
-			// Create the first texture to render to
-			const rendTex0 = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, rendTex0);	 
-			{
-				// define size and format of level 0
-				const level = 0;
-				const internalFormat = gl.RGBA;
-				const border = 0;
-				const format = gl.RGBA;
-				const type = gl.UNSIGNED_BYTE;
-				const data = null;
-				gl.texImage2D(
-					gl.TEXTURE_2D, 
-					level, 
-					internalFormat,
-					targetTextureWidth, targetTextureHeight, 
-					border,
-					format, 
-					type, 
-					data
-				);
+		let vao = gl.createVertexArray();
+		gl.bindVertexArray(vao);
+		gl.enableVertexAttribArray(viewUnis.positionAttribute);
+		var size = 2;             // 2 components per iteration
+		var type = gl.FLOAT;      // the data is 32bit floats
+		var normalize = false;    // don't normalize the data
+		var stride = 0;           // 0 = move forward size * sizeof(type) each iteration to get the next position
+		var offset = 0;           // start at the beginning of the buffer
+		gl.vertexAttribPointer(
+			viewUnis.positionAttribute, size, type, normalize, stride, offset
+		);
+		
+	// Tell WebGL how to convert from clip space to pixels
+		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+		
+	// Clear the canvas
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		
+	// Create and bind a texture.
+		var texture = gl.createTexture();
+		
+		
+		// use texture unit 0
+		gl.activeTexture(gl.TEXTURE0);
+		
+		// set the size of all of our compute textures
+		const targetTextureWidth = 117;
+		const targetTextureHeight = 169;
+		
+		//hopefully this will un-fuck things  spoilers: it did not ! Too bad!
+		gl.disable(gl.BLEND);
+		
+		/*   R E P R E S E N T A T I O N
+		 *
+		 *  edge grid:
+		 *    velocity
+		 *  
+		 *  node grid:
+		 *    obstacles
+		 *    external force
+		 *
+		 *
+		 *
+		 *
+		 *
+		 */
 				
-				// set the filtering so we don't need mips
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			}
-			
-			const rendTex1 = gl.createTexture();
-			gl.bindTexture(gl.TEXTURE_2D, rendTex1);	 
-			{
-				// define size and format of level 0
-				const level = 0;
-				const internalFormat = gl.RGBA;
-				const border = 0;
-				const format = gl.RGBA;
-				const type = gl.UNSIGNED_BYTE;
-				const data = null;
-				gl.texImage2D(
-					gl.TEXTURE_2D, 
-					level, 
-					internalFormat,
-					targetTextureWidth, targetTextureHeight, 
-					border,
-					format, 
-					type, 
-					data
-				);
-				
-				// set the filtering so we don't need mips
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			}
-
-			//unbind textures
-			gl.bindTexture(gl.TEXTURE_2D, null);	 
-			
-			// Create and bind the framebuffer
-			const fbuff = gl.createFramebuffer();
-			gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
-			
-			// attach the texture as the first color attachment
-			const attPoint = gl.COLOR_ATTACHMENT0;
+		function make_texture(){
+			const tex = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, tex); 
+			// define size and format of level 0
 			const level = 0;
-			gl.framebufferTexture2D
-			(
-				gl.FRAMEBUFFER,
-				attPoint,
-				gl.TEXTURE_2D,
-				rendTex0,
-				level
+			const internalFormat = gl.RGBA;
+			const border = 0;
+			const format = gl.RGBA;
+			const type = gl.UNSIGNED_BYTE;
+			const data = null;
+			gl.texImage2D(
+				gl.TEXTURE_2D, 
+				level, 
+				internalFormat,
+				targetTextureWidth, targetTextureHeight, 
+				border,
+				format, 
+				type, 
+				data
 			);
 			
-		// draw
-			var primitiveType = gl.TRIANGLES;
-			var offset = 0;
-			var count = 6;
-			
-			var mouse_X = 0.0;
-			var mouse_Y = 0.0;
-			
-			function render2tex(time)
-			{
-				gl.useProgram(calc_program);
-				gl.uniform1f(timeUniformLocation, time/1000.0);
-				gl.uniform2f(resolutionUniformLocation, targetTextureWidth, targetTextureHeight);
-				gl.uniform2f(mouseUniformLocation, mouse_X*(targetTextureWidth/gl.canvas.width), mouse_Y*targetTextureHeight/gl.canvas.height);
-				gl.uniform1i(textureCursedLocation, 0);
-				gl.drawArrays(primitiveType, offset, count);
-			}
-			
-			function render2screen(time)
-			{
-				gl.useProgram(view_program);
-				gl.uniform1f(view_timeUniformLocation, time/1000.0);
-				gl.uniform2f(view_resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-				gl.uniform2f(view_mouseUniformLocation, mouse_X, mouse_Y);
-				gl.uniform1i(view_textureCursedLocation, 0);
-				gl.drawArrays(primitiveType, offset, count);
-			}
-			let frameNum = 0;
-			
+			// set the filtering so we don't need mips
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.bindTexture(gl.TEXTURE_2D, null); 
+			return tex;
+		}
+		
+		// Create the first texture to render to
+		const rendTex0 = make_texture();
+		const rendTex1 = make_texture();
+
+		/* Velocity field */
+		const velo1 = make_texture();
+		const velo2 = make_texture();
+		
+		/* Force field */
+		const fors1 = make_texture();
+		const fors2 = make_texture();
+
+		/* Flags - x-is obstacle? (1 - obstacle, 0 - free) */
+		const flgs1 = make_texture();
+		const flgs2 = make_texture();
+
+		/* Amount of fluid - for aesthetic purposes */
+		const amou1 = make_texture();
+		const amou2 = make_texture();
+
+		// Create and bind the framebuffer
+		const fbuff = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
+		
+		// attach the texture as the first color attachment
+		const attPoint = gl.COLOR_ATTACHMENT0;
+		const level = 0;
+		gl.framebufferTexture2D
+		(
+			gl.FRAMEBUFFER,
+			attPoint,
+			gl.TEXTURE_2D,
+			rendTex0,
+			level
+		);
+		
+	// draw
+		var primitiveType = gl.TRIANGLES;
+		var offset = 0;
+		var count = 6;
+		
+		var mouse_X = 0.0;
+		var mouse_Y = 0.0;
+		
+		function render2tex(time)
+		{
+			gl.useProgram(calc_program);
+			gl.uniform1f(calcUnis.time, time/1000.0);
+			gl.uniform2f(calcUnis.resolution, targetTextureWidth, targetTextureHeight);
+			gl.uniform2f(calcUnis.mouse, mouse_X*(targetTextureWidth/gl.canvas.width), mouse_Y*targetTextureHeight/gl.canvas.height);
+			gl.uniform1i(calcUnis.textureCursed, 0);
+			gl.drawArrays(primitiveType, offset, count);
+		}
+		
+		function render2screen(time)
+		{
 			gl.useProgram(view_program);
-			gl.bindTexture(gl.TEXTURE_2D, prusaTexture)
+			gl.uniform1f(viewUnis.time, time/1000.0);
+			gl.uniform2f(viewUnis.resolution, gl.canvas.width, gl.canvas.height);
+			gl.uniform2f(viewUnis.mouse, mouse_X, mouse_Y);
+			gl.uniform1i(viewUnis.textureCursed, 0);
+			gl.drawArrays(primitiveType, offset, count);
+		}
+		
+		function swapper(a, b, parity)
+		{
+			return (parity ? a : b);
+		}
+		
+		var textureSet0 =
+		{
+			tgol : rendTex0 
+		};
+		
+		var textureSet1 =
+		{
+			tgol : rendTex1 
+		};
+		
+		function iterate(iter, time)
+		{
+			let even = (iter%2===0)
+			let odd  = (iter%2===1)
+
+			let source = swapper(textureSet0, textureSet1, even);
+			let target = swapper(textureSet1, textureSet0, even);
+			
+			gl.bindTexture(gl.TEXTURE_2D, source.tgol)
 			gl.framebufferTexture2D
 			(
 				gl.FRAMEBUFFER,
 				attPoint,
 				gl.TEXTURE_2D,
-				rendTex1,
+				target.tgol,
 				level
 			);
 			gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
 			// Clear the canvas
 			gl.clearColor(0, 0, 0, 1);
 			gl.clear(gl.COLOR_BUFFER_BIT);
-			render2tex(0.0);
-
-
-			function renderLoop(timeStamp)
-			{ 
-				frameNum++;
-			
-				gl.useProgram(calc_program);
-				// take turns rendering onto one texture or the other
-				gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
-				switch(frameNum%2)
-				{
-				case 0: //even frame
-					gl.bindTexture(gl.TEXTURE_2D, rendTex0)
-					gl.framebufferTexture2D
-					(
-						gl.FRAMEBUFFER,
-						attPoint,
-						gl.TEXTURE_2D,
-						rendTex1,
-						level
-					);
-					gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
-					// Clear the canvas
-					gl.clearColor(0, 0, 0, 1);
-					gl.clear(gl.COLOR_BUFFER_BIT);
-					render2tex(timeStamp);
-				break;
-				
-				case 1: //odd frame
-					gl.bindTexture(gl.TEXTURE_2D, rendTex1)
-					gl.framebufferTexture2D
-					(
-						gl.FRAMEBUFFER,
-						attPoint,
-						gl.TEXTURE_2D,
-						rendTex0,
-						level
-					);
-					gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
-					// Clear the canvas
-					gl.clearColor(0, 0, 0, 1);
-					gl.clear(gl.COLOR_BUFFER_BIT);
-					render2tex(timeStamp);
-				break;
-				}
-
-				
-				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-				// render to the screen
-				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-				//gl.bindTexture(gl.TEXTURE_2D, rendTex0)
-				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-				// Clear the canvas
-				gl.clearColor(0, 0, 0, 1);
-				gl.clear(gl.COLOR_BUFFER_BIT);
-				render2screen(timeStamp);
-				
-				function mouseMove( event ) {
-					mouse_X = event.clientX;
-					mouse_Y = event.clientY;
-				}
-				canvas.addEventListener("mousemove", mouseMove, false);
-			
-			//recursive call to renderLoop
-			window.requestAnimationFrame(renderLoop);
+			render2tex(time);
+		}
+		let frameNum = 0;
 		
-			}
+		gl.useProgram(view_program);
+		gl.bindTexture(gl.TEXTURE_2D, prusaTexture)
+		gl.framebufferTexture2D
+		(
+			gl.FRAMEBUFFER,
+			attPoint,
+			gl.TEXTURE_2D,
+			rendTex1,
+			level
+		);
+		gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
+		// Clear the canvas
+		gl.clearColor(0, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		render2tex(0.0);
 
-			// begin the render loop
-			window.requestAnimationFrame(renderLoop);
-		})
+
+		function renderLoop(timeStamp)
+		{ 
+			frameNum++;
+		
+			gl.useProgram(calc_program);
+			// take turns rendering onto one texture or the other
+			gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
+			
+
+			iterate(frameNum, timeStamp);
+
+			
+			webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+			// render to the screen
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			//gl.bindTexture(gl.TEXTURE_2D, rendTex0)
+			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+			// Clear the canvas
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			render2screen(timeStamp);
+			
+			function mouseMove( event ) {
+				mouse_X = event.clientX;
+				mouse_Y = event.clientY;
+			}
+			canvas.addEventListener("mousemove", mouseMove, false);
+		
+		//recursive call to renderLoop
+		window.requestAnimationFrame(renderLoop);
+	
+		}
+
+		// begin the render loop
+		window.requestAnimationFrame(renderLoop);
+
+	})
 }
 
 main();
