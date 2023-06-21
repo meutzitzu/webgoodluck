@@ -104,14 +104,17 @@ function main() {
 		return;
 	}
 	
-	let prusaTexture = loadTexture(gl, './res/tex/single.png');
-
+	const ext = gl.getExtension("EXT_color_buffer_float");
+	
+	let obstacleTexture = loadTexture(gl, './res/tex/obstacle.png');
+	
 // create GLSL shaders, upload the GLSL source, compile the shaders
-	//	promise-land ahead
+		//promise-land ahead
 	Promise.all([
 			fetch("./res/shaders/vertex.glsl"),
 			fetch("./res/shaders/view.glsl"),
-			fetch("./res/shaders/frag.glsl")
+			fetch("./res/shaders/fors.glsl"),
+			fetch("./res/shaders/udiv.glsl")
 	]).then((values) => {
 			let result = [];
 			for (const i in values){
@@ -125,10 +128,15 @@ function main() {
 			createShader(gl, gl.VERTEX_SHADER, values[0]),
 			createShader(gl, gl.FRAGMENT_SHADER, values[1])
 		);
-
-		let calc_program = createProgram(gl,
+		
+		let force_program = createProgram(gl,
 			createShader(gl, gl.VERTEX_SHADER, values[0]),
 			createShader(gl, gl.FRAGMENT_SHADER, values[2])
+		);
+		
+		let undiverge_program = createProgram(gl,
+			createShader(gl, gl.VERTEX_SHADER, values[0]),
+			createShader(gl, gl.FRAGMENT_SHADER, values[3])
 		);
 		
 		let viewUnis = 
@@ -137,20 +145,30 @@ function main() {
 			mouse : gl.getUniformLocation(view_program, "u_mouse"), 
 			resolution : gl.getUniformLocation(view_program, "u_resolution"),
 			position : gl.getAttribLocation(view_program, "a_position"),
-			textureCursed : gl.getUniformLocation(view_program, "u_cursed"),
+			textureCursed : gl.getUniformLocation(view_program, "u_texture"),
 		};
-
-		let calcUnis = 
+		
+		let forceUnis = 
 		{
-			time : gl.getUniformLocation(calc_program, "u_time"), 
-			mouse : gl.getUniformLocation(calc_program, "u_mouse"), 
-			resolution : gl.getUniformLocation(calc_program, "u_resolution"),
-			position: gl.getAttribLocation(calc_program, "a_position"),
-			textureCursed : gl.getUniformLocation(calc_program, "u_cursed"),
+			time : gl.getUniformLocation(force_program, "u_time"), 
+			mouse : gl.getUniformLocation(force_program, "u_mouse"), 
+			resolution : gl.getUniformLocation(force_program, "u_resolution"),
+			position: gl.getAttribLocation(force_program, "a_position"),
+			textureCursed : gl.getUniformLocation(view_program, "u_texture"),
+		};
+		
+		let undivergeUnis = 
+		{
+			time : gl.getUniformLocation(undiverge_program, "u_time"), 
+			mouse : gl.getUniformLocation(undiverge_program, "u_mouse"), 
+			resolution : gl.getUniformLocation(undiverge_program, "u_resolution"),
+			position : gl.getAttribLocation(undiverge_program, "a_position"),
+			textureVelo : gl.getUniformLocation(undiverge_program, "u_velocity"),
+			textureObstacle : gl.getUniformLocation(undiverge_program, "u_obstacle"),
 		};
 		
 		let positionBuffer = gl.createBuffer();
-
+		
 		gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 		
 		var positions = [
@@ -174,6 +192,10 @@ function main() {
 		gl.vertexAttribPointer(
 			viewUnis.positionAttribute, size, type, normalize, stride, offset
 		);
+		var primitiveType = gl.TRIANGLES;
+		var offset = 0;
+		var count = 6;
+		
 		
 	// Tell WebGL how to convert from clip space to pixels
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -196,6 +218,7 @@ function main() {
 		//hopefully this will un-fuck things  spoilers: it did not ! Too bad!
 		gl.disable(gl.BLEND);
 		
+		
 		/*   R E P R E S E N T A T I O N
 		 *
 		 *  edge grid:
@@ -204,10 +227,19 @@ function main() {
 		 *  node grid:
 		 *    obstacles
 		 *    external force
+		 */
+
+		/*   C O M P U T A T I O N
 		 *
+		 *   Force shader
+		 *      - inputs all forces from the force texture as velocities into the velocity tex
 		 *
+		 *   Undiverge shader
+		 *      - reduces the divergence of every cell individually
+		 *      - by iterating, (Gauss-Seidel) the divergence is brought to 0 everywhere
 		 *
-		 *
+		 *   Advection shader
+		 *      - propagates the velocity field forward a single timestep
 		 *
 		 */
 				
@@ -216,10 +248,11 @@ function main() {
 			gl.bindTexture(gl.TEXTURE_2D, tex); 
 			// define size and format of level 0
 			const level = 0;
-			const internalFormat = gl.RGBA;
+			const internalFormat = gl.RGBA32F;
+			//const internalFormat = gl.RGBA;
 			const border = 0;
 			const format = gl.RGBA;
-			const type = gl.UNSIGNED_BYTE;
+			const type = gl.FLOAT;
 			const data = null;
 			gl.texImage2D(
 				gl.TEXTURE_2D, 
@@ -246,62 +279,103 @@ function main() {
 		const rendTex1 = make_texture();
 
 		/* Velocity field */
+		const velo0 = make_texture();
 		const velo1 = make_texture();
-		const velo2 = make_texture();
 		
 		/* Force field */
+		const fors0 = make_texture();
 		const fors1 = make_texture();
-		const fors2 = make_texture();
 
-		/* Flags - x-is obstacle? (1 - obstacle, 0 - free) */
+		/* Flags - x -- is obstacle? (1 - obstacle, 0 - free) */
+		const flgs0 = make_texture();
 		const flgs1 = make_texture();
-		const flgs2 = make_texture();
 
 		/* Amount of fluid - for aesthetic purposes */
+		const amou0 = make_texture();
 		const amou1 = make_texture();
-		const amou2 = make_texture();
 
 		// Create and bind the framebuffer
 		const fbuff = gl.createFramebuffer();
 		gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
 		
-		// attach the texture as the first color attachment
-		const attPoint = gl.COLOR_ATTACHMENT0;
-		const level = 0;
-		gl.framebufferTexture2D
-		(
-			gl.FRAMEBUFFER,
-			attPoint,
-			gl.TEXTURE_2D,
-			rendTex0,
-			level
-		);
-		
-	// draw
-		var primitiveType = gl.TRIANGLES;
-		var offset = 0;
-		var count = 6;
-		
-		var mouse_X = 0.0;
-		var mouse_Y = 0.0;
-		
-		function render2tex(time)
-		{
-			gl.useProgram(calc_program);
-			gl.uniform1f(calcUnis.time, time/1000.0);
-			gl.uniform2f(calcUnis.resolution, targetTextureWidth, targetTextureHeight);
-			gl.uniform2f(calcUnis.mouse, mouse_X*(targetTextureWidth/gl.canvas.width), mouse_Y*targetTextureHeight/gl.canvas.height);
-			gl.uniform1i(calcUnis.textureCursed, 0);
-			gl.drawArrays(primitiveType, offset, count);
+		let attPoint = gl.COLOR_ATTACHMENT0;
+		let level = 0;
+		function attach_as_target( texture ){
+			// attach the texture as the first color attachment of the framebuffer
+			gl.framebufferTexture2D
+			(
+				gl.FRAMEBUFFER,
+				attPoint,
+				gl.TEXTURE_2D,
+				texture,
+				level
+			);
 		}
 		
-		function render2screen(time)
+		function attach_as_source( texture ){
+			gl.activeTexture( gl.TEXTURE0 );
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+		}
+		
+		
+		
+		function force_init(time){
+			gl.useProgram(force_program);
+			gl.uniform1f(forceUnis.time, time/1000.0);
+			gl.uniform2f(forceUnis.resolution, targetTextureWidth, targetTextureHeight);
+			gl.uniform2f(
+				forceUnis.mouse, 
+				mouse_X*(targetTextureWidth/gl.canvas.width),
+				mouse_Y*targetTextureHeight/gl.canvas.height
+			);
+			gl.uniform1i(forceUnis.textureCursed, 0);
+		}
+
+		function undiverge_init(time){
+			gl.useProgram(undiverge_program);
+			gl.uniform1f(undivergeUnis.time, time/1000.0);
+			gl.uniform2f(undivergeUnis.resolution, targetTextureWidth, targetTextureHeight);
+			gl.uniform2f(
+				undivergeUnis.mouse, 
+				mouse_X*(targetTextureWidth/gl.canvas.width),
+				mouse_Y*targetTextureHeight/gl.canvas.height
+			);
+			gl.uniform1i(undivergeUnis.textureVelo, 0);
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, obstacleTexture);
+			gl.activeTexture(gl.TEXTURE0);
+			gl.uniform1i(undivergeUnis.textureObstacle, 1);
+		}
+
+		function view_init(time)
 		{
 			gl.useProgram(view_program);
 			gl.uniform1f(viewUnis.time, time/1000.0);
 			gl.uniform2f(viewUnis.resolution, gl.canvas.width, gl.canvas.height);
 			gl.uniform2f(viewUnis.mouse, mouse_X, mouse_Y);
 			gl.uniform1i(viewUnis.textureCursed, 0);
+		}
+
+		function render2tex()
+		{
+			gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			
+			
+			gl.drawArrays(primitiveType, offset, count);
+		}
+		
+		function render2screen()
+		{
+			webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+			// render to the screen
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			//gl.bindTexture(gl.TEXTURE_2D, rendTex0)
+			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+			// Clear the canvas
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT);
 			gl.drawArrays(primitiveType, offset, count);
 		}
 		
@@ -312,41 +386,56 @@ function main() {
 		
 		var textureSet0 =
 		{
-			tgol : rendTex0 
+			tgol : rendTex0,
+			velo : velo0
 		};
 		
 		var textureSet1 =
 		{
-			tgol : rendTex1 
+			tgol : rendTex1,
+			velo : velo1
 		};
 		
 		function iterate(iter, time)
 		{
 			let even = (iter%2===0)
 			let odd  = (iter%2===1)
-
+			
 			let source = swapper(textureSet0, textureSet1, even);
 			let target = swapper(textureSet1, textureSet0, even);
 			
-			gl.bindTexture(gl.TEXTURE_2D, source.tgol)
-			gl.framebufferTexture2D
-			(
-				gl.FRAMEBUFFER,
-				attPoint,
-				gl.TEXTURE_2D,
-				target.tgol,
-				level
-			);
-			gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
-			// Clear the canvas
-			gl.clearColor(0, 0, 0, 1);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-			render2tex(time);
+			force_init(time);
+			attach_as_source(source.velo);
+			attach_as_target(target.velo);
+			render2tex();
+			
+			
+			undiverge_init(time)
+			attach_as_source(target.velo);
+			attach_as_target(source.velo);
+			render2tex();
+			///*
+			for (let i = 0 ; i<5; i++){
+				undiverge_init(time)
+				attach_as_source(source.velo);
+				attach_as_target(target.velo);
+				render2tex();
+				
+				undiverge_init(time)
+				attach_as_source(source.velo);
+				attach_as_target(target.velo);
+				render2tex();
+			}
+			//*/
+
+
+			attach_as_source(source.velo);
 		}
+		
 		let frameNum = 0;
 		
 		gl.useProgram(view_program);
-		gl.bindTexture(gl.TEXTURE_2D, prusaTexture)
+		gl.bindTexture(gl.TEXTURE_2D, obstacleTexture)
 		gl.framebufferTexture2D
 		(
 			gl.FRAMEBUFFER,
@@ -357,32 +446,23 @@ function main() {
 		);
 		gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
 		// Clear the canvas
-		gl.clearColor(0, 0, 0, 1);
-		gl.clear(gl.COLOR_BUFFER_BIT);
 		render2tex(0.0);
-
-
+		
+		var mouse_X = 0.0;
+		var mouse_Y = 0.0;
+		
 		function renderLoop(timeStamp)
 		{ 
 			frameNum++;
-		
-			gl.useProgram(calc_program);
+			
+			gl.useProgram(force_program);
 			// take turns rendering onto one texture or the other
 			gl.bindFramebuffer(gl.FRAMEBUFFER, fbuff);
 			
-
-			iterate(frameNum, timeStamp);
-
 			
-			webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-			// render to the screen
-			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-			//gl.bindTexture(gl.TEXTURE_2D, rendTex0)
-			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-			// Clear the canvas
-			gl.clearColor(0, 0, 0, 1);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-			render2screen(timeStamp);
+			iterate(frameNum, timeStamp);
+			view_init(timeStamp);
+			render2screen();
 			
 			function mouseMove( event ) {
 				mouse_X = event.clientX;
