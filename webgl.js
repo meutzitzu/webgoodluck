@@ -114,7 +114,8 @@ function main() {
 			fetch("./res/shaders/vertex.glsl"),
 			fetch("./res/shaders/view.glsl"),
 			fetch("./res/shaders/fors.glsl"),
-			fetch("./res/shaders/udiv.glsl")
+			fetch("./res/shaders/udiv.glsl"),
+			fetch("./res/shaders/advec.glsl")
 	]).then((values) => {
 			let result = [];
 			for (const i in values){
@@ -138,6 +139,11 @@ function main() {
 			createShader(gl, gl.VERTEX_SHADER, values[0]),
 			createShader(gl, gl.FRAGMENT_SHADER, values[3])
 		);
+
+		let advect_program = createProgram(gl,
+			createShader(gl, gl.VERTEX_SHADER, values[0]),
+			createShader(gl, gl.FRAGMENT_SHADER, values[4])
+		);
 		
 		let viewUnis = 
 		{
@@ -158,6 +164,16 @@ function main() {
 		};
 		
 		let undivergeUnis = 
+		{
+			time : gl.getUniformLocation(undiverge_program, "u_time"), 
+			mouse : gl.getUniformLocation(undiverge_program, "u_mouse"), 
+			resolution : gl.getUniformLocation(undiverge_program, "u_resolution"),
+			position : gl.getAttribLocation(undiverge_program, "a_position"),
+			textureVelo : gl.getUniformLocation(undiverge_program, "u_velocity"),
+			textureObstacle : gl.getUniformLocation(undiverge_program, "u_obstacle"),
+		};
+		
+		let advecUnis = 
 		{
 			time : gl.getUniformLocation(undiverge_program, "u_time"), 
 			mouse : gl.getUniformLocation(undiverge_program, "u_mouse"), 
