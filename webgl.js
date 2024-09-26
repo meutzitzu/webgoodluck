@@ -57,7 +57,7 @@ function main() {
 				createShader(gl, gl.FRAGMENT_SHADER, values[1])
 			);
 			let timeUniformLocation = gl.getUniformLocation(program, "u_time"); 
-
+			
 			let mouseUniformLocation = gl.getUniformLocation(program, "u_mouse"); 
 
 			let resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution")
