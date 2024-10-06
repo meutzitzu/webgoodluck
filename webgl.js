@@ -1,4 +1,9 @@
 "use strict";
+let x=0.0, y=0.0, z=0.1, r=0.0;
+
+var pressedKeys = {};
+window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
+window.onkeydown = function(e) { pressedKeys[e.keyCode] = true; }
 
 function createShader(gl, type, source) {
   var shader = gl.createShader(type);
@@ -58,7 +63,7 @@ function main() {
 			);
 			let timeUniformLocation = gl.getUniformLocation(program, "u_time"); 
 			
-			let mouseUniformLocation = gl.getUniformLocation(program, "u_mouse"); 
+			let viewUniformLocation = gl.getUniformLocation(program, "u_view"); 
 
 			let resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution")
 
@@ -117,21 +122,19 @@ function main() {
 				gl.uniform1f(timeUniformLocation, timeStamp/1000.0);
 				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 				gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-				
+				gl.uniform4f(viewUniformLocation, x, y, z, r);
 				gl.drawArrays(primitiveType, offset, count);
 				
 		// recursive invocation
 			
-			function mouseMove( event )
-			{
-				gl.uniform2f(mouseUniformLocation, event.clientX, event.clientY);
-			}
-
-			canvas.addEventListener("mousemove", mouseMove, false);
-      
       //recursive call to renderLoop
 			window.requestAnimationFrame(renderLoop);
-		
+				z*=(pressedKeys[16] ? 1.1 : 1.0);
+				z*=(pressedKeys[17] ? 0.9 : 1.0);
+				y+=z*(pressedKeys[87] ? 0.1 : 0.0);
+				y+=z*(pressedKeys[83] ? -0.1 : 0.0);
+				x+=z*(pressedKeys[65] ? -0.1 : 0.0);
+				x+=z*(pressedKeys[68] ? 0.1 : 0.0);
 			}
 
 			// begin the render loop
