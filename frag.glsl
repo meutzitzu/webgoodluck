@@ -4,8 +4,8 @@ precision highp float;
 out vec4 FragColor;
 uniform vec2 u_resolution;
 uniform float u_time;
-uniform vec2 u_mouse; // This is not very optimised. Ideally you would do all the screenspace camera movement calculations outside the shader and just provide the transform matrix and so this should just be a mat2.
 uniform vec4 u_CZ;
+uniform vec4 u_view;
 #define pi radians(180)
 
 
@@ -25,18 +25,18 @@ float random(vec2 st)
 
 void main()
 {
-	vec4 u_view = vec4(-0.001*u_mouse.x, 0.0, 0.01*u_mouse.y,0.0);
 	vec2 uv = vec2(gl_FragCoord.x / u_resolution.x, gl_FragCoord.y / u_resolution.y)*2.0 + vec2(-1.0);
 	float aspect_ratio = float(u_resolution.x)/u_resolution.y;
 	uv.x -= 0.5;
 	uv.x *= aspect_ratio;
 	uv *= u_view.z;
+//	uv*=1.0;
 	uv += u_view.xy;
-	int MSAA = 8;
+	int MSAA = 4;
 	int l = 0;
 //	int maxiters = int(floor(min(10.0*u_time, 512)));
 //	int maxiters =  int(min(12.0*u_time , 256));
-	int maxiters = 1024;
+	int maxiters = 128;
 	float h = 0.0;
 	for(int s=0; s<MSAA; ++s)
 	{	
