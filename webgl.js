@@ -129,8 +129,8 @@ function main() {
 			
       //recursive call to renderLoop
 			window.requestAnimationFrame(renderLoop);
-				z*=(pressedKeys[16] ? 1/(1.0+speed) : 1.0);
-				z*=(pressedKeys[32] ? 1.0+speed : 1.0);
+				z*=(pressedKeys[32] ? 1/(1.0+speed) : 1.0);
+				z*=(pressedKeys[16] ? 1.0+speed : 1.0);
 				y+=z*(pressedKeys[87] ? speed : 0.0);
 				y+=z*(pressedKeys[83] ? -speed : 0.0);
 				x+=z*(pressedKeys[65] ? -speed : 0.0);
