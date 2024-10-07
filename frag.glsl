@@ -32,11 +32,11 @@ void main()
 	uv *= u_view.z;
 //	uv*=1.0;
 	uv += u_view.xy;
-	int MSAA = 4;
+	int MSAA = 8;
 	int l = 0;
 //	int maxiters = int(floor(min(10.0*u_time, 512)));
 //	int maxiters =  int(min(12.0*u_time , 256));
-	int maxiters = 128;
+	int maxiters = 1024;
 	float h = 0.0;
 	for(int s=0; s<MSAA; ++s)
 	{	
