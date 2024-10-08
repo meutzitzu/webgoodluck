@@ -25,17 +25,21 @@ float random(vec2 st)
 
 void main()
 {
-	vec2 uv = vec2(gl_FragCoord.x / u_resolution.x, gl_FragCoord.y / u_resolution.y)*2.0 + vec2(-1.0);
+	vec2 uv = vec2(gl_FragCoord.x/ u_resolution.x, gl_FragCoord.y/ u_resolution.y)*2.0 + vec2(-1.0);
 	float aspect_ratio = float(u_resolution.x)/u_resolution.y;
+	vec2 aux1=uv;
+	uv.x=aux1.x*cos(u_view.w)-aux1.y*sin(u_view.w);
+	uv.y=aux1.x*sin(u_view.w)+aux1.y*cos(u_view.w);
+//	uv.x-=0.25;
 	uv.x *= aspect_ratio;
 	uv *= u_view.z;
 //	uv*=1.0;
 	uv += u_view.xy;
-	int MSAA = 8;
+	int MSAA = 4;
 	int l = 0;
 //	int maxiters = int(floor(min(10.0*u_time, 512)));
 //	int maxiters =  int(min(12.0*u_time , 256));
-	int maxiters = 1024;
+	int maxiters = 256;
 	float h = 0.0;
 	for(int s=0; s<MSAA; ++s)
 	{	
@@ -46,8 +50,8 @@ void main()
 		for( int i=0; i<maxiters; ++i)
 		{
 			aux = z;
-			z.x = z.x*z.x -z.y*z.y;
-			z.y = 2.0*aux.x*aux.y;
+			z.x = (z.x*z.x -z.y*z.y);
+			z.y = (2.0*aux.x*aux.y);
 			z += c;
 			l = (length(z) > 4.0 ? i: l);
 		}

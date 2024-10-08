@@ -1,5 +1,5 @@
 "use strict";
-let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.03;
+let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.03, min_speed=0.03;
 
 var pressedKeys = {};
 window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
@@ -65,7 +65,7 @@ function main() {
 			
 			let viewUniformLocation = gl.getUniformLocation(program, "u_view"); 
 
-			let resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution")
+			let resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
 
 			let positionAttributeLocation = gl.getAttribLocation(program, "a_position");
 			
@@ -135,6 +135,12 @@ function main() {
 				y+=z*(pressedKeys[83] ? -speed : 0.0);
 				x+=z*(pressedKeys[65] ? -speed : 0.0);
 				x+=z*(pressedKeys[68] ? speed : 0.0);
+				r+=z*(pressedKeys[37] ? -speed : 0.0);
+				r+=z*(pressedKeys[39] ? speed : 0.0);
+				speed+=(pressedKeys[38] ? 0.01 : 0.0);
+				speed+=(pressedKeys[40] ? -0.01 : 0.0);
+				if (speed<min_speed)speed=min_speed;
+				console.log(speed);
 			}
 
 			// begin the render loop
