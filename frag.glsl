@@ -27,11 +27,12 @@ void main()
 {
 	vec2 uv = vec2(gl_FragCoord.x/ u_resolution.x, gl_FragCoord.y/ u_resolution.y)*2.0 + vec2(-1.0);
 	float aspect_ratio = float(u_resolution.x)/u_resolution.y;
+	
+//	uv.x-=0.25;
+	uv.x *= aspect_ratio;
 	vec2 aux1=uv;
 	uv.x=aux1.x*cos(u_view.w)-aux1.y*sin(u_view.w);
 	uv.y=aux1.x*sin(u_view.w)+aux1.y*cos(u_view.w);
-//	uv.x-=0.25;
-	uv.x *= aspect_ratio;
 	uv *= u_view.z;
 //	uv*=1.0;
 	uv += u_view.xy;
