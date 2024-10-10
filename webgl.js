@@ -1,5 +1,7 @@
 "use strict";
-let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, min_speed=0.01;
+let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01;
+let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
+
 
 var pressedKeys = {};
 window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
@@ -139,8 +141,14 @@ function main() {
 				r+=(pressedKeys[39] ? speed : 0.0);
 				speed+=(pressedKeys[38] ? 0.01 : 0.0);
 				speed+=(pressedKeys[40] ? -0.01 : 0.0);
-				if (speed<min_speed)speed=min_speed;
-				console.log(speed);
+				if (pressedKeys[82]){
+					z=default_z;
+					x=default_x;
+					y=default_y;
+					r=default_r;
+					speed=default_speed;
+				}
+				if (speed<default_speed)speed=default_speed;
 			}
 
 			// begin the render loop
