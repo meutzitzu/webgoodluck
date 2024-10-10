@@ -1,5 +1,5 @@
 ### Some WebGL demos
-
+DEMO https://meutzitzu.github.io/webgoodluck/
 Currently we only render a classic Mandelbrot Set
 
 `w` `a` `s` `d` to move
