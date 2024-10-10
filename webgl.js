@@ -131,16 +131,36 @@ function main() {
 			
       //recursive call to renderLoop
 			window.requestAnimationFrame(renderLoop);
-				z*=(pressedKeys[32] ? 1/(1.0+speed) : 1.0);
+				z/=(pressedKeys[32] ? 1.0+speed : 1.0);
 				z*=(pressedKeys[16] ? 1.0+speed : 1.0);
-				y+=z*(pressedKeys[87] ? speed : 0.0);
-				y+=z*(pressedKeys[83] ? -speed : 0.0);
-				x+=z*(pressedKeys[65] ? -speed : 0.0);
-				x+=z*(pressedKeys[68] ? speed : 0.0);
-				r+=(pressedKeys[37] ? -speed : 0.0);
-				r+=(pressedKeys[39] ? speed : 0.0);
-				speed+=(pressedKeys[38] ? 0.01 : 0.0);
-				speed+=(pressedKeys[40] ? -0.01 : 0.0);
+				x+=
+					z*
+					(
+						Math.cos(r)*
+						(
+							(pressedKeys[65] ? -speed : 0.0)+
+							(pressedKeys[68] ? speed : 0.0)
+						)
+						-
+						Math.sin(r)*
+						(
+							(pressedKeys[87] ? speed : 0.0)+
+							(pressedKeys[83] ? -speed : 0.0)
+						)
+					);
+				y+=
+					z*(
+						Math.sin(r)*((pressedKeys[65] ? -speed : 0.0)+
+						(pressedKeys[68] ? speed : 0.0))
+						+
+						Math.cos(r)*((pressedKeys[87] ? speed : 0.0)+
+						(pressedKeys[83] ? -speed : 0.0))
+					);
+				//x+=z*((pressedKeys[65] ? -speed : 0.0)+(pressedKeys[68] ? speed : 0.0));
+				r+=(pressedKeys[81] ? speed : 0.0);
+				r+=(pressedKeys[69] ? -speed : 0.0);
+				speed*=(pressedKeys[88] ? 1.1 : 1.0);
+				speed/=(pressedKeys[90] ? 1.1 : 1.0);
 				if (pressedKeys[82]){
 					z=default_z;
 					x=default_x;
@@ -148,7 +168,6 @@ function main() {
 					r=default_r;
 					speed=default_speed;
 				}
-				if (speed<default_speed)speed=default_speed;
 			}
 
 			// begin the render loop
