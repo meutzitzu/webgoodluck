@@ -6,6 +6,7 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec4 u_CZ;
 uniform vec4 u_view;
+uniform float u_key;
 #define pi radians(180)
 
 
@@ -23,7 +24,7 @@ float random(vec2 st)
     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
-void main()
+int mandelbrot()
 {
 	vec2 uv = vec2(gl_FragCoord.x/ u_resolution.x, gl_FragCoord.y/ u_resolution.y)*2.0 + vec2(-1.0);
 	float aspect_ratio = float(u_resolution.x)/u_resolution.y;
@@ -63,6 +64,10 @@ void main()
 //	vec3 col = vec3((h));
 
 	FragColor = vec4(col, 1.0);
-
+	return 1;
+}
+void main()
+{
+	(u_key==1.0 ? mandelbrot() : 0);
 }
 
