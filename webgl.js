@@ -1,5 +1,5 @@
 "use strict";
-let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=1.0;
+let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=2.0;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
 
 
@@ -38,6 +38,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
 function getKey(key){
 	if (pressedKeys[49])return 1.0;
+	if (pressedKeys[50])return 2.0;
 	// keycode from 1->9 are 49->57 and for 0 is 48
 	// I will add the other ifs only if i need to make more fractals
 
