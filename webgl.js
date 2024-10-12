@@ -1,5 +1,5 @@
 "use strict";
-let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=2.0;
+let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=1.0;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
 
 
