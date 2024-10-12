@@ -71,7 +71,7 @@ function main() {
 				createShader(gl, gl.VERTEX_SHADER, values[0]),
 				createShader(gl, gl.FRAGMENT_SHADER, values[1])
 			);
-			let keyUniformLocation = gl.getUniformLocation(program, "u_key");
+			//let keyUniformLocation = gl.getUniformLocation(program, "u_key");
 			
 			let timeUniformLocation = gl.getUniformLocation(program, "u_time"); 
 			
@@ -132,7 +132,7 @@ function main() {
 				gl.useProgram(program);
 				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 				gl.uniform1f(timeUniformLocation, timeStamp/1000.0);
-				gl.uniform1f(keyUniformLocation, key);
+				//gl.uniform1f(keyUniformLocation, key);
 				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 				gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 				gl.uniform4f(viewUniformLocation, x, y, z, r);
