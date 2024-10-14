@@ -47,7 +47,7 @@ void main()
 	int l = 0;
 //	int maxiters = int(floor(min(10.0*u_time, 512)));
 //	int maxiters =  int(min(12.0*u_time , 256));
-	int maxiters = 256;
+	int maxiters = 128;
 	float h = 0.0;
 	for(int s=0; s<MSAA; ++s)
 	{	
