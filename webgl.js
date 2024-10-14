@@ -1,5 +1,5 @@
 "use strict";
-let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01;
+let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=1.0;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
 
 
@@ -36,6 +36,14 @@ function createProgram(gl, vertexShader, fragmentShader) {
   return undefined;
 }
 
+function getKey(key){
+	if (pressedKeys[49])return 1.0;
+	if (pressedKeys[50])return 2.0;
+	// keycode from 1->9 are 49->57 and for 0 is 48
+	// I will add the other ifs only if i need to make more fractals
+
+	return key;
+}
 
 
 function main() {
@@ -63,6 +71,8 @@ function main() {
 				createShader(gl, gl.VERTEX_SHADER, values[0]),
 				createShader(gl, gl.FRAGMENT_SHADER, values[1])
 			);
+			//let keyUniformLocation = gl.getUniformLocation(program, "u_key");
+			
 			let timeUniformLocation = gl.getUniformLocation(program, "u_time"); 
 			
 			let viewUniformLocation = gl.getUniformLocation(program, "u_view"); 
@@ -122,6 +132,7 @@ function main() {
 				gl.useProgram(program);
 				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 				gl.uniform1f(timeUniformLocation, timeStamp/1000.0);
+				//gl.uniform1f(keyUniformLocation, key);
 				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 				gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 				gl.uniform4f(viewUniformLocation, x, y, z, r);
@@ -168,6 +179,7 @@ function main() {
 					r=default_r;
 					speed=default_speed;
 				}
+				key=getKey(key);
 			}
 
 			// begin the render loop

@@ -23,6 +23,14 @@ float random(vec2 st)
     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
+// multiplication of complex numbers
+vec2 cm(vec2 num1, vec2 num2)
+{
+	vec2 rez;
+	rez.x=num1.x*num2.x-num1.y*num2.y;
+	rez.y=num1.x*num2.y+num1.y*num2.x;
+	return rez;
+}
 void main()
 {
 	vec2 uv = vec2(gl_FragCoord.x/ u_resolution.x, gl_FragCoord.y/ u_resolution.y)*2.0 + vec2(-1.0);
@@ -50,8 +58,9 @@ void main()
 		for( int i=0; i<maxiters; ++i)
 		{
 			aux = z;
-			z.x = (z.x*z.x -z.y*z.y);
-			z.y = (2.0*aux.x*aux.y);
+			z=cm(z, z);
+//			z.x = (z.x*z.x -z.y*z.y);
+//			z.y = (2.0*aux.x*aux.y);
 			z += c;
 			l = (length(z) > 4.0 ? i: l);
 		}
@@ -63,6 +72,5 @@ void main()
 //	vec3 col = vec3((h));
 
 	FragColor = vec4(col, 1.0);
-
 }
 
