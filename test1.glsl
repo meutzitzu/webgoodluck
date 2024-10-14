@@ -52,17 +52,17 @@ void main()
 			aux = z;
 			z.x = (z.x*z.x -z.y*z.y);
 			z.y = (2.0*aux.x*aux.y);
-			z += c;
+			z += 2.0*c;
 			l = (length(z) > 4.0 ? i: l);
 		}
 		h += (float(l)/float(maxiters))/float(MSAA);
 	}
 
-	vec3 col = hsv2rgb(vec3(1.0*h+0.1*u_time, 1.0, sqrt(h)));
+//	vec3 col = hsv2rgb(vec3(1.0*h+0.1*u_time, 1.0, sqrt(h)));
 
 	vec3 col = vec3((h));
 
-//	FragColor = vec4(col, 1.0);
+	FragColor = vec4(col, 1.0);
 
 }
 

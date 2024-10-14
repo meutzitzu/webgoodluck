@@ -82,18 +82,24 @@ function main() {
 		.then((values) => 
 		{
 		//	console.log(values);
+		{
+			const ma=[];
+			ma[10]="plm";
+			console.log(ma); 
+		}
 			for (var i=1; i<values.length; i++){
-				programs.push(createProgram(gl,
+				var j=i-1;
+				programs[j]=createProgram(gl,
 					createShader(gl, gl.VERTEX_SHADER, values[0]),
 					createShader(gl, gl.FRAGMENT_SHADER, values[i])
-				));
-				timeUniformLocations.push(gl.getUniformLocation(programs[i], "u_time")); 
+				);
+				timeUniformLocations[j]=gl.getUniformLocation(programs[j], "u_time"); 
 				
-				viewUniformLocations.push(gl.getUniformLocation(programs[i], "u_view")); 
+				viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
 
-				resolutionUniformLocations.push(gl.getUniformLocation(programs[i], "u_resolution"));
+				resolutionUniformLocations[j]=gl.getUniformLocation(programs[j], "u_resolution");
 
-				positionAttributeLocations.push(gl.getAttribLocation(programs[i], "a_position"));
+				positionAttributeLocations[j]=gl.getAttribLocation(programs[j], "a_position");
 			}	
 			let positionBuffer = gl.createBuffer();
 			gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -133,7 +139,7 @@ function main() {
 		// Bind the attribute/buffer set we want.
 			gl.bindVertexArray(vao);
 			
-		// draw
+		// draw (nu atinge ca garanteaza mihai ca e bun)
 			var primitiveType = gl.TRIANGLES;
 			var offset = 0;
 			var count = 6;
@@ -190,8 +196,8 @@ function main() {
 					speed=default_speed;
 				}
 				let oldindex=curindex;
-				curindex=newIndex(index);
-				if (curindex!=oldindex)switcher(gl, index);
+				curindex=newIndex(curindex);
+				if (curindex!=oldindex)switcher(gl, curindex);
 			}
 
 			// begin the render loop
