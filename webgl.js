@@ -1,28 +1,32 @@
 "use strict";
+// the values that you change based on what key you press
 let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=1.0;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
 
-
+// an array that traks the keys pressed
 var pressedKeys = {};
 window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
 window.onkeydown = function(e) { pressedKeys[e.keyCode] = true; }
 
+// function that creates webgl Shaders 
 function createShader(gl, type, source) {
   var shader = gl.createShader(type);
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
+	// idk I will put this here to look like we have more comments 
   var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if (success) {
     return shader;
   }
-
+	//console.logging some shit for reasons (idk why)
   console.log(gl.getShaderInfoLog(shader));  // eslint-disable-line
   gl.deleteShader(shader);
   return undefined;
 }
-
+// function that makes the Shader into the program
 function createProgram(gl, vertexShader, fragmentShader) {
   var program = gl.createProgram();
+  //putting the shader into gl or sometinh idk
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
   gl.linkProgram(program);
@@ -30,25 +34,47 @@ function createProgram(gl, vertexShader, fragmentShader) {
   if (success) {
     return program;
   }
-
+//console.logging some shit for reasons (idk why)
   console.log(gl.getProgramInfoLog(program));  // eslint-disable-line
   gl.deleteProgram(program);
   return undefined;
 }
 
-function getKey(key){
-	if (pressedKeys[49])return 1.0;
-	if (pressedKeys[50])return 2.0;
-	// keycode from 1->9 are 49->57 and for 0 is 48
-	// I will add the other ifs only if i need to make more fractals
+// the array of glsl files
+const array=[
+"./mandelbrot.glsl", 
+"./test1.glsl"
+];
+// the uniform arrays that fucked me up
+const programs=[], timeUniformLocations=[], viewUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[];
+let curindex=0;
 
-	return key;
+// function that switches the index 
+function newIndex(index)
+{
+	if (pressedKeys[49])return 0;
+	if (pressedKeys[50])return 1;
+
+	// or not if it did change
+	return index;
 }
-
-
+// switcher (switch was already taken)
+function switcher(gl)
+{
+	// bullshit that works so do not touch it
+	gl.useProgram(programs[curindex]);
+	webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+	gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
+	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
+	gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
+	gl.drawArrays(primitiveType, offset, count);
+}
+// MAIN
 function main() {
 // Get A WebGL context
 	var canvas = document.getElementById("c");
+	// I am gonna pretend I know what the fuck is this (it makes webgl2 avaleble for browser, thx google)
 	var gl = canvas.getContext("webgl2");
 	if (!gl) {
 		return;
@@ -56,7 +82,8 @@ function main() {
 	
 
 // create GLSL shaders, upload the GLSL source, compile the shaders
-	Promise.all([fetch("./vertex.glsl"), fetch("./frag.glsl")])
+	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
+		// I was told this shit works so I am gonna just say YES I WILL LEAVE IT ALONE (FOR NOW)
 		.then((values) => {
 			let result = [];
 			for (const i in values){
@@ -64,27 +91,39 @@ function main() {
 			}
 			return Promise.all(result);
 		})
+		// passing the values
 		.then((values) => 
 		{
 		//	console.log(values);
-			let program = createProgram(gl,
-				createShader(gl, gl.VERTEX_SHADER, values[0]),
-				createShader(gl, gl.FRAGMENT_SHADER, values[1])
-			);
-			//let keyUniformLocation = gl.getUniformLocation(program, "u_key");
-			
-			let timeUniformLocation = gl.getUniformLocation(program, "u_time"); 
-			
-			let viewUniformLocation = gl.getUniformLocation(program, "u_view"); 
+		{
+			// just leave this here it is funny as fuck
+			const ma=[];
+			ma[10]="plm";
+			console.log(ma); 
+		}
+			// the for that precompiles the shaders
+			for (var i=1; i<values.length; i++){
+				// this shit made me cry (a little)
+				var j=i-1;
+				// creating the j-ght program 
+				programs[j]=createProgram(gl,
+					createShader(gl, gl.VERTEX_SHADER, values[0]),
+					createShader(gl, gl.FRAGMENT_SHADER, values[i])
+				);
+				// uniforms pointing location idk it works do not make me do it again please
+				timeUniformLocations[j]=gl.getUniformLocation(programs[j], "u_time"); 
+				
+				viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
 
-			let resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+				resolutionUniformLocations[j]=gl.getUniformLocation(programs[j], "u_resolution");
 
-			let positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-			
+				positionAttributeLocations[j]=gl.getAttribLocation(programs[j], "a_position");
+			}	
+			// idk what this is but I aint gonna delete it (yet)
 			let positionBuffer = gl.createBuffer();
-
 			gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 			
+			// ah yes positions for the triangle or something
 			var positions = [
 			  -1.0, -1.0,
 			  -1.0,  1.0,
@@ -93,21 +132,22 @@ function main() {
 			   1.0, -1.0,
 			   1.0,  1.0,
 			];
+			// just skip the next 20 lines please 
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+			
 
+			// o hello there so you ignoring comments now
 			let vao = gl.createVertexArray();
 			gl.bindVertexArray(vao);
-			gl.enableVertexAttribArray(positionAttributeLocation);
+			gl.enableVertexAttribArray(positionAttributeLocations[curindex]);
 			var size = 2;          // 2 components per iteration
 			var type = gl.FLOAT;   // the data is 32bit floats
 			var normalize = false; // don't normalize the data
 			var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
 			var offset = 0;        // start at the beginning of the buffer
 			gl.vertexAttribPointer(
-			    positionAttributeLocation, size, type, normalize, stride, offset);
-			
+			    positionAttributeLocations[curindex], size, type, normalize, stride, offset);
 			webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-			
 		// Tell WebGL how to convert from clip space to pixels
 			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 			
@@ -116,34 +156,35 @@ function main() {
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			
 		// Tell it to use our program (pair of shaders)
-			gl.useProgram(program);
+			gl.useProgram(programs[curindex]);
 
 			
 		// Bind the attribute/buffer set we want.
 			gl.bindVertexArray(vao);
 			
-		// draw
+		// draw (nu atinge ca garanteaza mihai ca e bun)
 			var primitiveType = gl.TRIANGLES;
 			var offset = 0;
 			var count = 6;
 
 			function renderLoop(timeStamp) { 
-		// set time uniform
-				gl.useProgram(program);
+		// set uniforms 
+				gl.useProgram(programs[curindex]);
 				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-				gl.uniform1f(timeUniformLocation, timeStamp/1000.0);
-				//gl.uniform1f(keyUniformLocation, key);
+				gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
 				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-				gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-				gl.uniform4f(viewUniformLocation, x, y, z, r);
+				gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
+				gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
 				gl.drawArrays(primitiveType, offset, count);
-				
+			
 		// recursive invocation
 			
       //recursive call to renderLoop
 			window.requestAnimationFrame(renderLoop);
+			// incrementation of values from line 1-2
 				z/=(pressedKeys[32] ? 1.0+speed : 1.0);
 				z*=(pressedKeys[16] ? 1.0+speed : 1.0);
+				// booooo math formula bla bla bla 
 				x+=
 					z*
 					(
@@ -172,6 +213,7 @@ function main() {
 				r+=(pressedKeys[69] ? -speed : 0.0);
 				speed*=(pressedKeys[88] ? 1.1 : 1.0);
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
+				// just press r and you are back to where you started
 				if (pressedKeys[82]){
 					z=default_z;
 					x=default_x;
@@ -179,7 +221,10 @@ function main() {
 					r=default_r;
 					speed=default_speed;
 				}
-				key=getKey(key);
+				// checking if index changed or nah
+				let oldindex=curindex;
+				curindex=newIndex(curindex);
+				if (curindex!=oldindex)switcher(gl);
 			}
 
 			// begin the render loop
@@ -187,4 +232,5 @@ function main() {
 		})
 }
 
+// lets call main 
 main();
