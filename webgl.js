@@ -45,7 +45,30 @@ function getKey(key){
 	return key;
 }
 
+const array=[
+"./mandelbrot.glsl", 
+"./test1.glsl"
+];
+const programs=[], timeUniformLocations=[], viewUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[];
+let curindex=0;
 
+function newIndex(index)
+{
+	if (pressedKeys[49])return 0;
+	if (pressedKeys[50])return 1;
+
+	return index;
+}
+function switcher(gl, index)
+{
+	gl.useProgram(programs[curindex]);
+	webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+	gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
+	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
+	gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
+	gl.drawArrays(primitiveType, offset, count);
+}
 function main() {
 // Get A WebGL context
 	var canvas = document.getElementById("c");
@@ -56,7 +79,7 @@ function main() {
 	
 
 // create GLSL shaders, upload the GLSL source, compile the shaders
-	Promise.all([fetch("./vertex.glsl"), fetch("./frag.glsl")])
+	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
 		.then((values) => {
 			let result = [];
 			for (const i in values){
@@ -67,22 +90,26 @@ function main() {
 		.then((values) => 
 		{
 		//	console.log(values);
-			let program = createProgram(gl,
-				createShader(gl, gl.VERTEX_SHADER, values[0]),
-				createShader(gl, gl.FRAGMENT_SHADER, values[1])
-			);
-			//let keyUniformLocation = gl.getUniformLocation(program, "u_key");
-			
-			let timeUniformLocation = gl.getUniformLocation(program, "u_time"); 
-			
-			let viewUniformLocation = gl.getUniformLocation(program, "u_view"); 
+		{
+			const ma=[];
+			ma[10]="plm";
+			console.log(ma); 
+		}
+			for (var i=1; i<values.length; i++){
+				var j=i-1;
+				programs[j]=createProgram(gl,
+					createShader(gl, gl.VERTEX_SHADER, values[0]),
+					createShader(gl, gl.FRAGMENT_SHADER, values[i])
+				);
+				timeUniformLocations[j]=gl.getUniformLocation(programs[j], "u_time"); 
+				
+				viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
 
-			let resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+				resolutionUniformLocations[j]=gl.getUniformLocation(programs[j], "u_resolution");
 
-			let positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-			
+				positionAttributeLocations[j]=gl.getAttribLocation(programs[j], "a_position");
+			}	
 			let positionBuffer = gl.createBuffer();
-
 			gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 			
 			var positions = [
@@ -97,17 +124,15 @@ function main() {
 
 			let vao = gl.createVertexArray();
 			gl.bindVertexArray(vao);
-			gl.enableVertexAttribArray(positionAttributeLocation);
+			gl.enableVertexAttribArray(positionAttributeLocations[curindex]);
 			var size = 2;          // 2 components per iteration
 			var type = gl.FLOAT;   // the data is 32bit floats
 			var normalize = false; // don't normalize the data
 			var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
 			var offset = 0;        // start at the beginning of the buffer
 			gl.vertexAttribPointer(
-			    positionAttributeLocation, size, type, normalize, stride, offset);
-			
+			    positionAttributeLocations[curindex], size, type, normalize, stride, offset);
 			webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-			
 		// Tell WebGL how to convert from clip space to pixels
 			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 			
@@ -116,28 +141,27 @@ function main() {
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			
 		// Tell it to use our program (pair of shaders)
-			gl.useProgram(program);
+			gl.useProgram(programs[curindex]);
 
 			
 		// Bind the attribute/buffer set we want.
 			gl.bindVertexArray(vao);
 			
-		// draw
+		// draw (nu atinge ca garanteaza mihai ca e bun)
 			var primitiveType = gl.TRIANGLES;
 			var offset = 0;
 			var count = 6;
 
 			function renderLoop(timeStamp) { 
 		// set time uniform
-				gl.useProgram(program);
+				gl.useProgram(programs[curindex]);
 				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-				gl.uniform1f(timeUniformLocation, timeStamp/1000.0);
-				//gl.uniform1f(keyUniformLocation, key);
+				gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
 				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-				gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-				gl.uniform4f(viewUniformLocation, x, y, z, r);
+				gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
+				gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
 				gl.drawArrays(primitiveType, offset, count);
-				
+			
 		// recursive invocation
 			
       //recursive call to renderLoop
@@ -179,7 +203,9 @@ function main() {
 					r=default_r;
 					speed=default_speed;
 				}
-				key=getKey(key);
+				let oldindex=curindex;
+				curindex=newIndex(curindex);
+				if (curindex!=oldindex)switcher(gl, curindex);
 			}
 
 			// begin the render loop
