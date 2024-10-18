@@ -89,11 +89,17 @@ let curindex=0;
 // function that switches the index 
 function newIndex(index)
 {
-	if (pressedKeys[49])return 0;
-	if (pressedKeys[50])return 1;
-
+	for (var i=0; i<array.length; i++){
+		if (pressedKeys[i+49])return i;
+	}
 	// or not if it did change
 	return index;
+}
+function powerOf2(number)
+{
+	var po2=1;
+	while (po2<=number)po2*=2;
+	return po2/2;
 }
 // switcher (switch was already taken)
 function switcher(gl, timeStamp, primitiveType, offset, count)
@@ -131,6 +137,9 @@ function main() {
 	}
 	
 	var gpuPerformence=getGPU(gl, canvas);
+	// calculation for bullshit
+	MSAA=4.0, maxiters=powerOf2(gpuPerformence/25);
+	console.log(maxiters);
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
 		// I was told this shit works so I am gonna just say YES I WILL LEAVE IT ALONE (FOR NOW)
@@ -286,13 +295,6 @@ function main() {
 				curindex=newIndex(curindex);
 				if (curindex!=oldindex)switcher(gl, timeStamp, primitiveType, offset, count);
 
-
-				
-				if (gpuPerformence>1000){
-					MSAA=4.0, maxiters=512;
-				} else {
-					MSAA=4.0, maxiters=128;
-				}
 			}
 
 			// begin the render loop
