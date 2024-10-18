@@ -1,7 +1,7 @@
 "use strict";
 // the values that you change based on what key you press
-let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=1.0;
-let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
+let x=0.0, y=0.0, z=1.0, rx=0.0, ry=0.0, rz=0.0, speed=0.01, key=1.0;
+let default_x=0.0, default_y=0.0, default_z=1.0, default_rx=0.0, default_ry=0.0, default_rz=0.0, default_speed=0.01;
 
 
 let MSAA=4.0, maxiters=128.0;
@@ -49,7 +49,9 @@ const array=[
 "./test1.glsl"
 ];
 // the uniform arrays that fucked me up
-const programs=[], timeUniformLocations=[], viewUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[];
+const programs=[], timeUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[]; 
+// position and rotations unifmors
+const XUniformLocations=[], YUniformLocations=[], ZUniformLocations=[];
 let curindex=0;
 
 // function that switches the index 
@@ -70,7 +72,18 @@ function switcher(gl, timeStamp, primitiveType, offset, count)
 	gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 	gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
-	gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
+	
+	/*
+	what to do:
+	vec2 x and rx
+	vec2 y and ry
+	vec2 z and rz 
+	*/
+	gl.uniform2f(XUniformLocations[curindex], x, rx);
+	gl.uniform2f(YUniformLocations[curindex], y, ry);
+	gl.uniform2f(ZUniformLocations[curindex], z, rz);
+	
+	//gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
 	gl.uniform1f(MSAAAtributeLocations[curindex], MSAA);
 	gl.uniform1f(maxitersAtributeLocations[curindex], maxiters);
 	gl.drawArrays(primitiveType, offset, count);
@@ -118,7 +131,12 @@ function main() {
 				// uniforms pointing location idk it works do not make me do it again please
 				timeUniformLocations[j]=gl.getUniformLocation(programs[j], "u_time"); 
 				
-				viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
+
+				XUniformLocations[j]=gl.getUniformLocation(programs[j], "u_x");
+				YUniformLocations[j]=gl.getUniformLocation(programs[j], "u_y");
+				ZUniformLocations[j]=gl.getUniformLocation(programs[j], "u_z");
+
+				//viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
 
 				resolutionUniformLocations[j]=gl.getUniformLocation(programs[j], "u_resolution");
 
@@ -191,13 +209,13 @@ function main() {
 				x+=
 					z*
 					(
-						Math.cos(r)*
+						Math.cos(rz)*
 						(
 							(pressedKeys[65] ? -speed : 0.0)+
 							(pressedKeys[68] ? speed : 0.0)
 						)
 						-
-						Math.sin(r)*
+						Math.sin(rz)*
 						(
 							(pressedKeys[87] ? speed : 0.0)+
 							(pressedKeys[83] ? -speed : 0.0)
@@ -205,15 +223,20 @@ function main() {
 					);
 				y+=
 					z*(
-						Math.sin(r)*((pressedKeys[65] ? -speed : 0.0)+
+						Math.sin(rz)*((pressedKeys[65] ? -speed : 0.0)+
 						(pressedKeys[68] ? speed : 0.0))
 						+
-						Math.cos(r)*((pressedKeys[87] ? speed : 0.0)+
+						Math.cos(rz)*((pressedKeys[87] ? speed : 0.0)+
 						(pressedKeys[83] ? -speed : 0.0))
 					);
 				//x+=z*((pressedKeys[65] ? -speed : 0.0)+(pressedKeys[68] ? speed : 0.0));
-				r+=(pressedKeys[81] ? speed : 0.0);
-				r+=(pressedKeys[69] ? -speed : 0.0);
+
+
+				/*
+				insert aci ce taste vrei sa folosesti sa schimbi rotatia pe rx si ry
+				*/
+				rz+=(pressedKeys[81] ? speed : 0.0);
+				rz+=(pressedKeys[69] ? -speed : 0.0);
 				speed*=(pressedKeys[88] ? 1.1 : 1.0);
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
 				// just press r and you are back to where you started
@@ -221,8 +244,10 @@ function main() {
 					z=default_z;
 					x=default_x;
 					y=default_y;
-					r=default_r;
 					speed=default_speed;
+					rz=default_rz;
+					rx=default_rx;
+					ry=default_ry;
 				}
 				// checking if index changed or nah
 				let oldindex=curindex;

@@ -5,7 +5,12 @@ out vec4 FragColor;
 uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec4 u_CZ;
-uniform vec4 u_view;
+//[x, rz], [y, ry], [z, rz]
+uniform vec2 u_x;
+uniform vec2 u_y;
+uniform vec2 u_z;
+
+//uniform vec4 u_view;
 uniform float u_MSAA;
 uniform float u_maxiters;
 #define pi radians(180)
@@ -45,11 +50,11 @@ void main()
 	uv.x *= aspect_ratio;
 	vec2 aux1=uv;
 	// rotation
-	uv.x=aux1.x*cos(u_view.w)-aux1.y*sin(u_view.w);
-	uv.y=aux1.x*sin(u_view.w)+aux1.y*cos(u_view.w);
-	uv *= u_view.z;
+	uv.x=aux1.x*cos(u_z.y)-aux1.y*sin(u_z.y);
+	uv.y=aux1.x*sin(u_z.y)+aux1.y*cos(u_z.y);
+	uv *= u_z.x;
 //	uv*=1.0;
-	uv += u_view.xy;
+	uv += vec2(u_x.x, u_x.y);
 	// how many times it recalculates the pixel or someting like that
 	//int MSAA = u_MSAA;
 	int l = 0;
@@ -62,7 +67,7 @@ void main()
 	for(int s=0; s<int(u_MSAA); ++s)
 	{	
 		// calculating the c point 
-		vec2 aux = uv + vec2(random(vec2((s))))/u_resolution*1.0*u_view.z;
+		vec2 aux = uv + vec2(random(vec2((s))))/u_resolution*1.0*u_z.x;
 		vec2 z = aux + u_CZ.zw;
 //		vec2 c = u_time*0.05*vec2(cos(u_time), sin(u_time));
 		vec2 c = aux;
@@ -71,7 +76,7 @@ void main()
 		{
 			// calculations
 			z=cm(z, z);
-			z += c*2.0;
+			z += c*1.5;
 			// if it escaped we return i
 			l = (length(z) > 4.0 ? i: l);
 		}
