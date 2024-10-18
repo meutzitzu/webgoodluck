@@ -6,6 +6,8 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec4 u_CZ;
 uniform vec4 u_view;
+uniform float u_MSAA;
+uniform float u_maxiters;
 #define pi radians(180)
 
 // idk why this is here I think for colors
@@ -49,23 +51,23 @@ void main()
 //	uv*=1.0;
 	uv += u_view.xy;
 	// how many times it recalculates the pixel or someting like that
-	int MSAA = 4;
+	//int MSAA = u_MSAA;
 	int l = 0;
 //	int maxiters = int(floor(min(10.0*u_time, 512)));
 //	int maxiters =  int(min(12.0*u_time , 256));
 	// maximum iterations (just read the fucking variable)
-	int maxiters = 128;
+	//int maxiters = 128;
 	float h = 0.0;
 	// The For
-	for(int s=0; s<MSAA; ++s)
+	for(int s=0; s<int(u_MSAA); ++s)
 	{	
 		// calculating the c point 
-		vec2 aux = uv + vec2(random(vec2((float(s)+1.0))))/u_resolution*1.0*u_view.z;
+		vec2 aux = uv + vec2(random(vec2((s))))/u_resolution*1.0*u_view.z;
 		vec2 z = aux + u_CZ.zw;
 //		vec2 c = u_time*0.05*vec2(cos(u_time), sin(u_time));
 		vec2 c = aux;
 		// checking if it escapes
-		for( int i=0; i<maxiters; ++i)
+		for( int i=0; i<int(u_maxiters); ++i)
 		{
 			// calculations
 			z=cm(z, z);
@@ -74,7 +76,7 @@ void main()
 			l = (length(z) > 4.0 ? i: l);
 		}
 		// the h is for the color
-		h += (float(l)/float(maxiters))/float(MSAA);
+		h += (float(l)/u_maxiters)/u_MSAA;
 	}
 	// color calculation
 	vec3 col = hsv2rgb(vec3(1.0*h+0.1*u_time, 1.0, sqrt(h)));

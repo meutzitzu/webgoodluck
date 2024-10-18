@@ -3,6 +3,8 @@
 let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=1.0;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
 
+
+let MSAA=4.0, maxiters=128.0;
 // an array that traks the keys pressed
 var pressedKeys = {};
 window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
@@ -15,6 +17,7 @@ function createShader(gl, type, source) {
   gl.compileShader(shader);
 	// idk I will put this here to look like we have more comments 
   var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+  //console.log(success);
   if (success) {
     return shader;
   }
@@ -42,11 +45,11 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
 // the array of glsl files
 const array=[
-"./mandelbrot.glsl", 
+"./mandelbrot.glsl",
 "./test1.glsl"
 ];
 // the uniform arrays that fucked me up
-const programs=[], timeUniformLocations=[], viewUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[];
+const programs=[], timeUniformLocations=[], viewUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[];
 let curindex=0;
 
 // function that switches the index 
@@ -59,7 +62,7 @@ function newIndex(index)
 	return index;
 }
 // switcher (switch was already taken)
-function switcher(gl)
+function switcher(gl, timeStamp, primitiveType, offset, count)
 {
 	// bullshit that works so do not touch it
 	gl.useProgram(programs[curindex]);
@@ -68,6 +71,8 @@ function switcher(gl)
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 	gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
 	gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
+	gl.uniform1f(MSAAAtributeLocations[curindex], MSAA);
+	gl.uniform1f(maxitersAtributeLocations[curindex], maxiters);
 	gl.drawArrays(primitiveType, offset, count);
 }
 // MAIN
@@ -116,6 +121,10 @@ function main() {
 				viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
 
 				resolutionUniformLocations[j]=gl.getUniformLocation(programs[j], "u_resolution");
+
+				MSAAAtributeLocations[j]=gl.getUniformLocation(programs[j], "u_MSAA");
+
+				maxitersAtributeLocations[j]=gl.getUniformLocation(programs[j], "u_maxiters");
 
 				positionAttributeLocations[j]=gl.getAttribLocation(programs[j], "a_position");
 			}	
@@ -169,13 +178,7 @@ function main() {
 
 			function renderLoop(timeStamp) { 
 		// set uniforms 
-				gl.useProgram(programs[curindex]);
-				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-				gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
-				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-				gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
-				gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
-				gl.drawArrays(primitiveType, offset, count);
+				switcher(gl, timeStamp, primitiveType, offset, count);
 			
 		// recursive invocation
 			
@@ -224,7 +227,7 @@ function main() {
 				// checking if index changed or nah
 				let oldindex=curindex;
 				curindex=newIndex(curindex);
-				if (curindex!=oldindex)switcher(gl);
+				if (curindex!=oldindex)switcher(gl, timeStamp, primitiveType, offset, count);
 			}
 
 			// begin the render loop
