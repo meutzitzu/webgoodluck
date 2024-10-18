@@ -131,11 +131,6 @@ function main() {
 	}
 	
 	var gpuPerformence=getGPU(gl, canvas);
-	if (gpuPerformence>1000){
-		MSAA=4.0, maxiters=256;
-	} else {
-		MSAA=4.0, maxiters=128;
-	}
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
 		// I was told this shit works so I am gonna just say YES I WILL LEAVE IT ALONE (FOR NOW)
@@ -290,6 +285,14 @@ function main() {
 				let oldindex=curindex;
 				curindex=newIndex(curindex);
 				if (curindex!=oldindex)switcher(gl, timeStamp, primitiveType, offset, count);
+
+
+				
+				if (gpuPerformence>1000){
+					MSAA=8.0, maxiters=1024;
+				} else {
+					MSAA=4.0, maxiters=128;
+				}
 			}
 
 			// begin the render loop
