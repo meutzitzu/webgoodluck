@@ -10,6 +10,24 @@ var pressedKeys = {};
 window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
 window.onkeydown = function(e) { pressedKeys[e.keyCode] = true; }
 
+
+// functie copiata de pe net
+function getGPU(gl, canvas){
+    var gl;
+    var debugInfo;
+    var vendor;
+    var renderer;
+
+
+    if (gl) {
+        debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+        renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    }
+    console.log(renderer);
+}
+
+
 // function that creates webgl Shaders 
 function createShader(gl, type, source) {
   var shader = gl.createShader(type);
@@ -98,7 +116,7 @@ function main() {
 		return;
 	}
 	
-
+	getGPU(gl, canvas);
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
 		// I was told this shit works so I am gonna just say YES I WILL LEAVE IT ALONE (FOR NOW)
