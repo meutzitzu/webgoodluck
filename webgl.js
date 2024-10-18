@@ -12,20 +12,34 @@ window.onkeydown = function(e) { pressedKeys[e.keyCode] = true; }
 
 
 // functie copiata de pe net
-function getGPU(gl, canvas){
+function getGPU(gl) {
     var gl;
     var debugInfo;
     var vendor;
     var renderer;
-
+    var maxTextureSize;
+    var maxRenderBufferSize;
 
     if (gl) {
+        // Get GPU details
         debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
         vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
         renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+
+        // Get performance-related metrics
+        maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE); // Maximum texture size
+        maxRenderBufferSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE); // Maximum renderbuffer size
     }
-    console.log(renderer);
+
+    console.log("GPU Renderer: " + renderer);
+    console.log("Max Texture Size: " + maxTextureSize);
+    console.log("Max Renderbuffer Size: " + maxRenderBufferSize);
+
+    // A proxy performance estimate based on texture and renderbuffer size
+    var performanceEstimate = Math.sqrt(maxTextureSize * maxRenderBufferSize);
+    return performanceEstimate;
 }
+
 
 
 // function that creates webgl Shaders 
@@ -116,7 +130,12 @@ function main() {
 		return;
 	}
 	
-	getGPU(gl, canvas);
+	var gpuPerformence=getGPU(gl, canvas);
+	if (gpuPerformence>1000){
+		MSAA=4.0, maxiters=256;
+	} else {
+		MSAA=4.0, maxiters=128;
+	}
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
 		// I was told this shit works so I am gonna just say YES I WILL LEAVE IT ALONE (FOR NOW)
