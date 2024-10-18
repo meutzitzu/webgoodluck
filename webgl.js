@@ -138,7 +138,9 @@ function main() {
 	
 	var gpuPerformence=getGPU(gl, canvas);
 	// calculation for bullshit
-	MSAA=4.0, maxiters=powerOf2(gpuPerformence/25);
+	maxiters=powerOf2(gpuPerformence/25);
+	MSAA=powerOf2(gpuPerformence)/(maxiters*4);
+	console.log(MSAA);
 	console.log(maxiters);
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
