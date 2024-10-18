@@ -78,7 +78,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
 // the array of glsl files
 const array=[
 "./mandelbrot.glsl",
-"./test1.glsl"
+"./jules.glsl"
 ];
 // the uniform arrays that fucked me up
 const programs=[], timeUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[]; 
