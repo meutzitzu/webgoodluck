@@ -1,6 +1,7 @@
 ### Some WebGL demos
 DEMO https://meutzitzu.github.io/webgoodluck/
-Currently we only render a classic Mandelbrot Set
+Currently we only render a classic Mandelbrot Set and Jules Set
+Soon we will render 3D models 
 
 `w` `a` `s` `d` to move
 `q` `e` to rotate
