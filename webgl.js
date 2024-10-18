@@ -289,7 +289,7 @@ function main() {
 
 				
 				if (gpuPerformence>1000){
-					MSAA=8.0, maxiters=1024;
+					MSAA=4.0, maxiters=512;
 				} else {
 					MSAA=4.0, maxiters=128;
 				}
