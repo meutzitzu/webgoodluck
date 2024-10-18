@@ -54,7 +54,7 @@ void main()
 	uv.y=aux1.x*sin(u_z.y)+aux1.y*cos(u_z.y);
 	uv *= u_z.x;
 //	uv*=1.0;
-	uv += vec2(u_x.x, u_x.y);
+	uv += vec2(u_x.x, u_y.x);
 	// how many times it recalculates the pixel or someting like that
 	//int MSAA = u_MSAA;
 	int l = 0;
