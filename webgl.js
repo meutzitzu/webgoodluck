@@ -136,12 +136,21 @@ function main() {
 		return;
 	}
 	
-	var gpuPerformence=getGPU(gl, canvas);
-	// calculation for bullshit
-	maxiters=powerOf2(gpuPerformence/25);
-	MSAA=powerOf2(gpuPerformence)/(maxiters*4);
+	var gpuPerformance = getGPU(gl);
+	var screenResolutionFactor = (gl.canvas.width * gl.canvas.height) / (1920 * 1080); // relative to Full HD
+	var performanceEstimate = gpuPerformance / Math.sqrt(screenResolutionFactor); // Adjust for resolution
+
+	// Adjust the performance estimate to a power of 2 and keep a minimum threshold for maxiters
+	maxiters = powerOf2(Math.max(64, Math.sqrt(performanceEstimate)));
+
+	// Ensure MSAA is between 2x and 8x, and round to the nearest power of 2
+	MSAA = powerOf2(Math.min(8, Math.max(2, Math.sqrt(performanceEstimate / 1000))));
+
 	console.log(MSAA);
 	console.log(maxiters);
+
+
+
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
 		// I was told this shit works so I am gonna just say YES I WILL LEAVE IT ALONE (FOR NOW)
