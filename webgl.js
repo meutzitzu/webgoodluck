@@ -1,12 +1,46 @@
 "use strict";
 // the values that you change based on what key you press
-let x=0.0, y=0.0, z=1.0, r=0.0, speed=0.01, key=1.0;
-let default_x=0.0, default_y=0.0, default_z=1.0, default_r=0.0, default_speed=0.01;
+let x=0.0, y=0.0, z=1.0, rx=0.0, ry=0.0, rz=0.0, speed=0.01, key=1.0;
+let default_x=0.0, default_y=0.0, default_z=1.0, default_rx=0.0, default_ry=0.0, default_rz=0.0, default_speed=0.01;
 
+
+let MSAA=4.0, maxiters=128.0;
 // an array that traks the keys pressed
 var pressedKeys = {};
 window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
 window.onkeydown = function(e) { pressedKeys[e.keyCode] = true; }
+
+
+// functie copiata de pe net
+function getGPU(gl) {
+    var gl;
+    var debugInfo;
+    var vendor;
+    var renderer;
+    var maxTextureSize;
+    var maxRenderBufferSize;
+
+    if (gl) {
+        // Get GPU details
+        debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+        renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+
+        // Get performance-related metrics
+        maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE); // Maximum texture size
+        maxRenderBufferSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE); // Maximum renderbuffer size
+    }
+
+    console.log("GPU Renderer: " + renderer);
+    console.log("Max Texture Size: " + maxTextureSize);
+    console.log("Max Renderbuffer Size: " + maxRenderBufferSize);
+
+    // A proxy performance estimate based on texture and renderbuffer size
+    var performanceEstimate = Math.sqrt(maxTextureSize * maxRenderBufferSize);
+    return performanceEstimate;
+}
+
+
 
 // function that creates webgl Shaders 
 function createShader(gl, type, source) {
@@ -15,6 +49,7 @@ function createShader(gl, type, source) {
   gl.compileShader(shader);
 	// idk I will put this here to look like we have more comments 
   var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+  //console.log(success);
   if (success) {
     return shader;
   }
@@ -42,24 +77,32 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
 // the array of glsl files
 const array=[
-"./mandelbrot.glsl", 
-"./test1.glsl"
+"./mandelbrot.glsl",
+"./jules.glsl"
 ];
 // the uniform arrays that fucked me up
-const programs=[], timeUniformLocations=[], viewUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[];
+const programs=[], timeUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[]; 
+// position and rotations unifmors
+const XUniformLocations=[], YUniformLocations=[], ZUniformLocations=[];
 let curindex=0;
 
 // function that switches the index 
 function newIndex(index)
 {
-	if (pressedKeys[49])return 0;
-	if (pressedKeys[50])return 1;
-
+	for (var i=0; i<array.length; i++){
+		if (pressedKeys[i+49])return i;
+	}
 	// or not if it did change
 	return index;
 }
+function powerOf2(number)
+{
+	var po2=1;
+	while (po2<=number)po2*=2;
+	return po2/2;
+}
 // switcher (switch was already taken)
-function switcher(gl)
+function switcher(gl, timeStamp, primitiveType, offset, count)
 {
 	// bullshit that works so do not touch it
 	gl.useProgram(programs[curindex]);
@@ -67,7 +110,20 @@ function switcher(gl)
 	gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 	gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
-	gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
+	
+	/*
+	what to do:
+	vec2 x and rx
+	vec2 y and ry
+	vec2 z and rz 
+	*/
+	gl.uniform2f(XUniformLocations[curindex], x, rx);
+	gl.uniform2f(YUniformLocations[curindex], y, ry);
+	gl.uniform2f(ZUniformLocations[curindex], z, rz);
+	
+	//gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
+	gl.uniform1f(MSAAAtributeLocations[curindex], MSAA);
+	gl.uniform1f(maxitersAtributeLocations[curindex], maxiters);
 	gl.drawArrays(primitiveType, offset, count);
 }
 // MAIN
@@ -80,6 +136,20 @@ function main() {
 		return;
 	}
 	
+	var gpuPerformance = getGPU(gl);
+	var screenResolutionFactor = (gl.canvas.width * gl.canvas.height) / (1920 * 1080); // relative to Full HD
+	var performanceEstimate = gpuPerformance / Math.sqrt(screenResolutionFactor); // Adjust for resolution
+
+	// Adjust the performance estimate to a power of 2 and keep a minimum threshold for maxiters
+	maxiters = powerOf2(Math.max(64, Math.sqrt(performanceEstimate)));
+
+	// Ensure MSAA is between 2x and 8x, and round to the nearest power of 2
+	MSAA = powerOf2(Math.min(8, Math.max(2, Math.sqrt(performanceEstimate / 1000))));
+
+	console.log(MSAA);
+	console.log(maxiters);
+
+
 
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
@@ -113,9 +183,18 @@ function main() {
 				// uniforms pointing location idk it works do not make me do it again please
 				timeUniformLocations[j]=gl.getUniformLocation(programs[j], "u_time"); 
 				
-				viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
+
+				XUniformLocations[j]=gl.getUniformLocation(programs[j], "u_x");
+				YUniformLocations[j]=gl.getUniformLocation(programs[j], "u_y");
+				ZUniformLocations[j]=gl.getUniformLocation(programs[j], "u_z");
+
+				//viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
 
 				resolutionUniformLocations[j]=gl.getUniformLocation(programs[j], "u_resolution");
+
+				MSAAAtributeLocations[j]=gl.getUniformLocation(programs[j], "u_MSAA");
+
+				maxitersAtributeLocations[j]=gl.getUniformLocation(programs[j], "u_maxiters");
 
 				positionAttributeLocations[j]=gl.getAttribLocation(programs[j], "a_position");
 			}	
@@ -169,13 +248,7 @@ function main() {
 
 			function renderLoop(timeStamp) { 
 		// set uniforms 
-				gl.useProgram(programs[curindex]);
-				webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-				gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
-				gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-				gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
-				gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
-				gl.drawArrays(primitiveType, offset, count);
+				switcher(gl, timeStamp, primitiveType, offset, count);
 			
 		// recursive invocation
 			
@@ -188,13 +261,13 @@ function main() {
 				x+=
 					z*
 					(
-						Math.cos(r)*
+						Math.cos(rz)*
 						(
 							(pressedKeys[65] ? -speed : 0.0)+
 							(pressedKeys[68] ? speed : 0.0)
 						)
 						-
-						Math.sin(r)*
+						Math.sin(rz)*
 						(
 							(pressedKeys[87] ? speed : 0.0)+
 							(pressedKeys[83] ? -speed : 0.0)
@@ -202,15 +275,20 @@ function main() {
 					);
 				y+=
 					z*(
-						Math.sin(r)*((pressedKeys[65] ? -speed : 0.0)+
+						Math.sin(rz)*((pressedKeys[65] ? -speed : 0.0)+
 						(pressedKeys[68] ? speed : 0.0))
 						+
-						Math.cos(r)*((pressedKeys[87] ? speed : 0.0)+
+						Math.cos(rz)*((pressedKeys[87] ? speed : 0.0)+
 						(pressedKeys[83] ? -speed : 0.0))
 					);
 				//x+=z*((pressedKeys[65] ? -speed : 0.0)+(pressedKeys[68] ? speed : 0.0));
-				r+=(pressedKeys[81] ? speed : 0.0);
-				r+=(pressedKeys[69] ? -speed : 0.0);
+
+
+				/*
+				insert aci ce taste vrei sa folosesti sa schimbi rotatia pe rx si ry
+				*/
+				rz+=(pressedKeys[81] ? speed : 0.0);
+				rz+=(pressedKeys[69] ? -speed : 0.0);
 				speed*=(pressedKeys[88] ? 1.1 : 1.0);
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
 				// just press r and you are back to where you started
@@ -218,13 +296,16 @@ function main() {
 					z=default_z;
 					x=default_x;
 					y=default_y;
-					r=default_r;
 					speed=default_speed;
+					rz=default_rz;
+					rx=default_rx;
+					ry=default_ry;
 				}
 				// checking if index changed or nah
 				let oldindex=curindex;
 				curindex=newIndex(curindex);
-				if (curindex!=oldindex)switcher(gl);
+				if (curindex!=oldindex)switcher(gl, timeStamp, primitiveType, offset, count);
+
 			}
 
 			// begin the render loop
