@@ -83,7 +83,7 @@ const array=[
 // the uniform arrays that fucked me up
 const programs=[], timeUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[]; 
 // position and rotations unifmors
-const XUniformLocations=[], YUniformLocations=[], ZUniformLocations=[];
+const posUniformLocaions=[], rotUniformLocaions=[];
 let curindex=0;
 
 // function that switches the index 
@@ -110,16 +110,8 @@ function switcher(gl, timeStamp, primitiveType, offset, count)
 	gl.uniform1f(timeUniformLocations[curindex], timeStamp/1000.0);
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 	gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
-	
-	/*
-	what to do:
-	vec2 x and rx
-	vec2 y and ry
-	vec2 z and rz 
-	*/
-	gl.uniform2f(XUniformLocations[curindex], x, rx);
-	gl.uniform2f(YUniformLocations[curindex], y, ry);
-	gl.uniform2f(ZUniformLocations[curindex], z, rz);
+	gl.uniform3f(posUniformLocaions[curindex], x, y, z);
+	gl.uniform3f(rotUniformLocaions[curindex], rx, ry, rz);
 	
 	//gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
 	gl.uniform1f(MSAAAtributeLocations[curindex], MSAA);
@@ -184,9 +176,8 @@ function main() {
 				timeUniformLocations[j]=gl.getUniformLocation(programs[j], "u_time"); 
 				
 
-				XUniformLocations[j]=gl.getUniformLocation(programs[j], "u_x");
-				YUniformLocations[j]=gl.getUniformLocation(programs[j], "u_y");
-				ZUniformLocations[j]=gl.getUniformLocation(programs[j], "u_z");
+				posUniformLocaions[j]=gl.getUniformLocation(programs[j], "u_pos");
+				rotUniformLocaions[j]=gl.getUniformLocation(programs[j], "u_rot");
 
 				//viewUniformLocations[j]=gl.getUniformLocation(programs[j], "u_view"); 
 
