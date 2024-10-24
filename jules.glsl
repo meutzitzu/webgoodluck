@@ -5,10 +5,9 @@ out vec4 FragColor;
 uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec4 u_CZ;
-//[x, rz], [y, ry], [z, rz]
-uniform vec2 u_x;
-uniform vec2 u_y;
-uniform vec2 u_z;
+uniform vec3 u_pos;
+uniform vec3 u_rot;
+
 
 //uniform vec4 u_view;
 uniform float u_MSAA;
@@ -46,22 +45,22 @@ void main()
 	uv.x *= aspect_ratio;
 	vec2 aux1=uv;
 	// rotation
-	uv.x=aux1.x*cos(u_z.y)-aux1.y*sin(u_z.y);
-	uv.y=aux1.x*sin(u_z.y)+aux1.y*cos(u_z.y);
-	uv *= u_z.x;
+	uv.x=aux1.x*cos(u_rot.z)-aux1.y*sin(u_rot.z);
+	uv.y=aux1.x*sin(u_rot.z)+aux1.y*cos(u_rot.z);
+	uv *= u_pos.z;
 //	uv*=1.0;
-	uv += vec2(u_x.x, u_y.x);
+	uv += u_pos.xy;
 	int l = 0;
 //	int maxiters = int(floor(min(10.0*u_time, 512)));
 	//int maxiters =  int(min(12.0*u_time , 192));
 	float h = 0.0;
 	for(int s=0; s<int(u_MSAA); ++s)
 	{	
-		vec2 aux = uv + vec2(random(vec2((s+1))))/u_resolution*1.0*u_z.x;
+		vec2 aux = uv + vec2(random(vec2((s+1))))/u_resolution*1.0*u_pos.z;
 		vec2 z = aux + u_CZ.zw;
 //		vec2 c = u_time*0.05*vec2(cos(u_time), sin(u_time));
 //		vec2 c = aux + u_CZ.xy;
-		vec2 c = vec2(u_x.x, u_y.x);
+		vec2 c = u_pos.xy;
 		for( int i=1; i<int (u_maxiters); ++i)
 		{
 			z=cm(z, z);
