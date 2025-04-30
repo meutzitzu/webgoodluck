@@ -278,8 +278,8 @@ function main() {
 				/*
 				insert aci ce taste vrei sa folosesti sa schimbi rotatia pe rx si ry
 				*/
-				rz+=(pressedKeys[81] ? speed : 0.0);
-				rz+=(pressedKeys[69] ? -speed : 0.0);
+				rz+=(pressedKeys[81] ? -speed : 0.0);
+				rz+=(pressedKeys[69] ? speed : 0.0);
 				speed*=(pressedKeys[88] ? 1.1 : 1.0);
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
 				// just press r and you are back to where you started
