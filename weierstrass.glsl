@@ -1,5 +1,5 @@
 #version 300 es
-precision mediump float;
+precision highp float;
 
 // Uniforms provided from JavaScript
 uniform vec2 u_resolution;   // Canvas resolution (width, height)
