@@ -2,6 +2,7 @@
 
 // the values that you change based on what key you press
 let x=0.0, y=0.0, z=1.0, rx=0.0, ry=0.0, rz=0.0, speed=0.01, key=1.0;
+let A=.5, B=3;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_rx=0.0, default_ry=0.0, default_rz=0.0, default_speed=0.01;
 
 
@@ -76,10 +77,18 @@ function createProgram(gl, vertexShader, fragmentShader) {
 // the array of glsl files
 const array=[
 "./mandelbrot.glsl",
-"./jules.glsl"
+"./jules.glsl",
+"./weierstrass.glsl"
 ];
 // the uniform arrays 
-const programs=[], timeUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[]; 
+const programs=[], 
+	timeUniformLocations=[], 
+	resolutionUniformLocations=[], 
+	positionAttributeLocations=[], 
+	MSAAAtributeLocations=[], 
+	maxitersAtributeLocations=[],
+	abAtributeLocations=[];
+
 // position and rotations unifmors
 const posUniformLocaions=[], rotUniformLocaions=[];
 let curindex=0;
@@ -110,6 +119,7 @@ function switcher(gl, timeStamp, primitiveType, offset, count)
 	gl.uniform2f(resolutionUniformLocations[curindex], gl.canvas.width, gl.canvas.height);
 	gl.uniform3f(posUniformLocaions[curindex], x, y, z);
 	gl.uniform3f(rotUniformLocaions[curindex], rx, ry, rz);
+	gl.uniform2f(abAtributeLocations[curindex], A, B);
 	
 	//gl.uniform4f(viewUniformLocations[curindex], x, y, z, r);
 	gl.uniform1f(MSAAAtributeLocations[curindex], MSAA);
@@ -142,8 +152,12 @@ function main() {
 
 
 // create GLSL shaders, upload the GLSL source, compile the shaders
-	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
-		.then((values) => {
+	Promise.all([
+		fetch("./vertex.glsl"), 
+		fetch(array[0]), 
+		fetch(array[1]),
+		fetch(array[2])
+	]).then((values) => {
 			let result = [];
 			for (const i in values){
 				result.push(values[i].text());
@@ -184,6 +198,8 @@ function main() {
 				maxitersAtributeLocations[j]=gl.getUniformLocation(programs[j], "u_maxiters");
 
 				positionAttributeLocations[j]=gl.getAttribLocation(programs[j], "a_position");
+				
+				abAtributeLocations[j]=gl.getUniformLocation(programs[j], "u_ab");
 			}	
 			
 			let positionBuffer = gl.createBuffer();
@@ -273,10 +289,19 @@ function main() {
 
 				rz+=(pressedKeys[81] ? speed : 0.0);
 				rz+=(pressedKeys[69] ? -speed : 0.0);
+				
+
+				// changing fractal oscilations
+				A+=(pressedKeys[75] ? .005 : .0);
+				A-=(pressedKeys[76] ? .005 : .0);
+				B+=(pressedKeys[188] ? 1 : 0);
+				B-=(pressedKeys[190] ? 1 : 0);
+				
+				// changing speen when 'z' or 'x' pressed
 				speed*=(pressedKeys[88] ? 1.1 : 1.0);
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
-				// just press r and you are back to where you started
-				if (pressedKeys[82]){
+
+				if (pressedKeys[82]){ // just press r and you are back to where you started
 					z=default_z;
 					x=default_x;
 					y=default_y;
@@ -284,6 +309,8 @@ function main() {
 					rz=default_rz;
 					rx=default_rx;
 					ry=default_ry;
+					A=.5;
+					B=3;
 				}
 				// checking if index changed or nah
 				let oldindex=curindex;
