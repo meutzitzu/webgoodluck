@@ -1,4 +1,5 @@
 "use strict";
+
 // the values that you change based on what key you press
 let x=0.0, y=0.0, z=1.0, rx=0.0, ry=0.0, rz=0.0, speed=0.01, key=1.0;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_rx=0.0, default_ry=0.0, default_rz=0.0, default_speed=0.01;
@@ -11,7 +12,6 @@ window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
 window.onkeydown = function(e) { pressedKeys[e.keyCode] = true; }
 
 
-// functie copiata de pe net
 function getGPU(gl) {
     var gl;
     var debugInfo;
@@ -53,7 +53,6 @@ function createShader(gl, type, source) {
   if (success) {
     return shader;
   }
-	//console.logging some shit for reasons (idk why)
   console.log(gl.getShaderInfoLog(shader));  // eslint-disable-line
   gl.deleteShader(shader);
   return undefined;
@@ -61,7 +60,7 @@ function createShader(gl, type, source) {
 // function that makes the Shader into the program
 function createProgram(gl, vertexShader, fragmentShader) {
   var program = gl.createProgram();
-  //putting the shader into gl or sometinh idk
+  //putting the shader into gl 
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
   gl.linkProgram(program);
@@ -69,7 +68,6 @@ function createProgram(gl, vertexShader, fragmentShader) {
   if (success) {
     return program;
   }
-//console.logging some shit for reasons (idk why)
   console.log(gl.getProgramInfoLog(program));  // eslint-disable-line
   gl.deleteProgram(program);
   return undefined;
@@ -80,7 +78,7 @@ const array=[
 "./mandelbrot.glsl",
 "./jules.glsl"
 ];
-// the uniform arrays that fucked me up
+// the uniform arrays 
 const programs=[], timeUniformLocations=[], resolutionUniformLocations=[], positionAttributeLocations=[], MSAAAtributeLocations=[], maxitersAtributeLocations=[]; 
 // position and rotations unifmors
 const posUniformLocaions=[], rotUniformLocaions=[];
@@ -122,7 +120,7 @@ function switcher(gl, timeStamp, primitiveType, offset, count)
 function main() {
 // Get A WebGL context
 	var canvas = document.getElementById("c");
-	// I am gonna pretend I know what the fuck is this (it makes webgl2 avaleble for browser, thx google)
+	// I am gonna pretend I know what this is (I actually do know, it makes webgl2 avaleble for browser, thx google)
 	var gl = canvas.getContext("webgl2");
 	if (!gl) {
 		return;
@@ -145,7 +143,6 @@ function main() {
 
 // create GLSL shaders, upload the GLSL source, compile the shaders
 	Promise.all([fetch("./vertex.glsl"), fetch(array[0]), fetch(array[1])])
-		// I was told this shit works so I am gonna just say YES I WILL LEAVE IT ALONE (FOR NOW)
 		.then((values) => {
 			let result = [];
 			for (const i in values){
@@ -158,21 +155,20 @@ function main() {
 		{
 		//	console.log(values);
 		{
-			// just leave this here it is funny as fuck
+			// just leave this here it is funny and does nothing
 			const ma=[];
 			ma[10]="plm";
 			console.log(ma); 
 		}
 			// the for that precompiles the shaders
 			for (var i=1; i<values.length; i++){
-				// this shit made me cry (a little)
 				var j=i-1;
 				// creating the j-ght program 
 				programs[j]=createProgram(gl,
 					createShader(gl, gl.VERTEX_SHADER, values[0]),
 					createShader(gl, gl.FRAGMENT_SHADER, values[i])
 				);
-				// uniforms pointing location idk it works do not make me do it again please
+				
 				timeUniformLocations[j]=gl.getUniformLocation(programs[j], "u_time"); 
 				
 
@@ -189,11 +185,11 @@ function main() {
 
 				positionAttributeLocations[j]=gl.getAttribLocation(programs[j], "a_position");
 			}	
-			// idk what this is but I aint gonna delete it (yet)
+			
 			let positionBuffer = gl.createBuffer();
 			gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 			
-			// ah yes positions for the triangle or something
+			// ah yes positions for the starting triangle
 			var positions = [
 			  -1.0, -1.0,
 			  -1.0,  1.0,
@@ -232,7 +228,7 @@ function main() {
 		// Bind the attribute/buffer set we want.
 			gl.bindVertexArray(vao);
 			
-		// draw (nu atinge ca garanteaza mihai ca e bun)
+		// draw 
 			var primitiveType = gl.TRIANGLES;
 			var offset = 0;
 			var count = 6;
@@ -275,11 +271,8 @@ function main() {
 				//x+=z*((pressedKeys[65] ? -speed : 0.0)+(pressedKeys[68] ? speed : 0.0));
 
 
-				/*
-				insert aci ce taste vrei sa folosesti sa schimbi rotatia pe rx si ry
-				*/
-				rz+=(pressedKeys[81] ? -speed : 0.0);
-				rz+=(pressedKeys[69] ? speed : 0.0);
+				rz+=(pressedKeys[81] ? speed : 0.0);
+				rz+=(pressedKeys[69] ? -speed : 0.0);
 				speed*=(pressedKeys[88] ? 1.1 : 1.0);
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
 				// just press r and you are back to where you started
