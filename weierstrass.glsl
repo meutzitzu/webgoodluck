@@ -11,32 +11,36 @@ out vec4 fragColor;
 
 // Converts HSV color to RGB color.
 vec3 hsv2rgb(in vec3 c) {
-    vec3 rgb = clamp(abs(mod(c.x*6.0 + vec3(0.0, 4.0, 2.0),
+    vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0,4.0,2.0),
                              6.0) - 3.0) - 1.0,
                      0.0, 1.0);
     rgb = rgb * rgb * (3.0 - 2.0 * rgb);
     return c.z * mix(vec3(1.0), rgb, c.y);
 }
 
-// Computes the Weierstrass function for a given x value.
+// Computes the normalized Weierstrass function for a given x value.
 float weierstrass(float x) {
     float a = u_ab.x;
     float b = u_ab.y;
     int N = 20;
     float sum = 0.0;
+    float norm = 0.0;
+    
+    // Accumulate the series and weight factor
     for (int n = 0; n < N; n++) {
-        // Each term scales down by 'a^n' and oscillates at frequency 'b^n'
-        sum += pow(a, float(n)) * cos(pow(b, float(n)) * 3.14159 * x);
+        float weight = pow(a, float(n));
+        sum += weight * cos(pow(b, float(n)) * 3.14159 * x);
+        norm += weight;
     }
-    return sum;
+    return sum / norm;
 }
 
 void main() {
-    // Convert pixel coordinates (gl_FragCoord) to normalized device coordinates [-1,1]
+    // Convert pixel coordinates to normalized device coordinates [-1,1]
     vec2 uv = gl_FragCoord.xy / u_resolution;
     uv = uv * 2.0 - 1.0;
     
-    // Correct the horizontal coordinate based on the canvas aspect ratio
+    // Adjust horizontal coordinate based on canvas aspect ratio
     float aspect = u_resolution.x / u_resolution.y;
     uv.x *= aspect;
     

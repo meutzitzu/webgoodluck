@@ -294,9 +294,9 @@ function main() {
 				// changing fractal oscilations
 				A+=(pressedKeys[38] ? .001 : .0);
 				A-=(pressedKeys[40] ? .001 : .0);
-				//A=Math.min(A, 0.9);
-				//A=Math.max(A, 0.005);
-				A=(((A*1000)+1000)%1000)/1000.0;
+				A=Math.min(A, 0.995);
+				A=Math.max(A, 0.005);
+				//A=(((A*1000)+1000)%1000)/1000.0;
 
 				B+=(pressedKeys[37] ? 1 : 0);
 				B-=(pressedKeys[39] ? 1 : 0);
