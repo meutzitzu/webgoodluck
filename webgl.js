@@ -292,11 +292,18 @@ function main() {
 				
 
 				// changing fractal oscilations
-				A+=(pressedKeys[75] ? .005 : .0);
-				A-=(pressedKeys[76] ? .005 : .0);
-				B+=(pressedKeys[188] ? 1 : 0);
-				B-=(pressedKeys[190] ? 1 : 0);
-				
+				A+=(pressedKeys[38] ? .001 : .0);
+				A-=(pressedKeys[40] ? .001 : .0);
+				//A=Math.min(A, 0.9);
+				//A=Math.max(A, 0.005);
+				A=(((A*1000)+1000)%1000)/1000.0;
+
+				B+=(pressedKeys[37] ? 1 : 0);
+				B-=(pressedKeys[39] ? 1 : 0);
+				// bmax = 107
+				// bmin = 0
+				B=(B+107)%107;
+
 				// changing speen when 'z' or 'x' pressed
 				speed*=(pressedKeys[88] ? 1.1 : 1.0);
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
