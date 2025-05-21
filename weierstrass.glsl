@@ -22,12 +22,12 @@ vec3 hsv2rgb(in vec3 c) {
 float weierstrass(float x) {
     float a = u_ab.x;
     float b = u_ab.y;
-    int N = 20;
+    
+    int N = int(clamp(20.0 + log2(u_pos.z) * 8.0, 20.0, 60.0));
     float sum = 0.0;
     float norm = 0.0;
-    
-    // Accumulate the series and weight factor
-    for (int n = 0; n < N; n++) {
+    for (int n = 0; n < 60; n++) { 
+        if (n >= N) break;
         float weight = pow(a, float(n));
         sum += weight * cos(pow(b, float(n)) * 3.14159 * x);
         norm += weight;
@@ -52,13 +52,14 @@ void main() {
     
     rotatedUV = rotatedUV * u_pos.z + u_pos.xy;
     
-    float x = rotatedUV.x * 4.0;
+    float x = rotatedUV.x * 1.0;
     
     // Calculate the Weierstrass function value at x.
     float yValue = weierstrass(x);
     
     // Generate a smooth line around the function value using smoothstep.
-    float line = smoothstep(yValue - 0.02, yValue + 0.02, rotatedUV.y);
+    float thickness = 0.02 / u_pos.z;
+    float line = smoothstep((yValue - thickness), (yValue + thickness), rotatedUV.y);
     
     // Create a color using the hsv2rgb function.
     // Saturation is set to 1, and brightness is determined by the 'line'.
