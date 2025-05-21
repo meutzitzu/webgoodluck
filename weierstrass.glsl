@@ -21,13 +21,12 @@ vec3 hsv2rgb(in vec3 c) {
 // Computes the normalized Weierstrass function for a given x value.
 float weierstrass(float x) {
     float a = u_ab.x;
-    float b = u_ab.y;
-    
-    int N = int(clamp(20.0 + log2(u_pos.z) * 8.0, 20.0, 60.0));
+    // Clamp b to a safe range to avoid black screen
+    float b = clamp(u_ab.y, 1.0, 50.0);
+    int N = 20;
     float sum = 0.0;
     float norm = 0.0;
-    for (int n = 0; n < 60; n++) { 
-        if (n >= N) break;
+    for (int n = 0; n < N; n++) { 
         float weight = pow(a, float(n));
         sum += weight * cos(pow(b, float(n)) * 3.14159 * x);
         norm += weight;
