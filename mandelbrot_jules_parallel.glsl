@@ -91,5 +91,28 @@ void main()
         col = hsv2rgb(vec3(3.0 * h, sqrt(h), sqrt(h)));
     }
 
+    // --- Crosshair overlay ---
+    // Center of left or right half
+    float centerX = isLeft ? u_resolution.x * 0.25 : u_resolution.x * 0.75;
+    float centerY = u_resolution.y * 0.5;
+    float crosshairThickness = 1.0; // thinner
+    float crosshairLength = 8.0;    // shorter
+
+    // Distance from current pixel to crosshair center
+    float dx = abs(gl_FragCoord.x - centerX);
+    float dy = abs(gl_FragCoord.y - centerY);
+
+    // Horizontal line
+    float hLine = step(dx, crosshairLength) * step(dy, crosshairThickness);
+    // Vertical line
+    float vLine = step(dy, crosshairLength) * step(dx, crosshairThickness);
+
+    float cross = max(hLine, vLine);
+
+    // Blend crosshair (white) over fractal color, more transparent
+    if (cross > 0.0) {
+        col = mix(col, vec3(1.0), 0.4);
+    }
+
     FragColor = vec4(col, 1.0);
 }
