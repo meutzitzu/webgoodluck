@@ -114,5 +114,6 @@ void main()
         col = mix(col, vec3(1.0), 0.4);
     }
 
+    // please work, please work, please work
     FragColor = vec4(col, 1.0);
 }
