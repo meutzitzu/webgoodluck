@@ -5,7 +5,7 @@ let x=0.0, y=0.0, z=1.0, rx=0.0, ry=0.0, rz=0.0, speed=0.01, key=1.0;
 let A=.5, B=3;
 let default_x=0.0, default_y=0.0, default_z=1.0, default_rx=0.0, default_ry=0.0, default_rz=0.0, default_speed=0.01;
 
-
+let on0=true;
 let MSAA=4.0, maxiters=128.0;
 // an array that traks the keys pressed
 var pressedKeys = {};
@@ -79,7 +79,7 @@ const array=[
     "./mandelbrot.glsl",
     "./jules.glsl",
     "./weierstrass.glsl",
-    "./mandelbrot_jules_parallel.glsl" // <-- Add this line
+    "./mandelbrot_jules_parallel.glsl" // !!!!!this has to be the last one in the array
 ];
 // the uniform arrays 
 const programs=[], 
@@ -99,11 +99,21 @@ function newIndex(index)
 {
     // 1-9 keys
     for (var i=0; i<array.length-1; i++){
-        if (pressedKeys[i+49]) return i;
+        if (pressedKeys[i+49]) {
+			on0=true;
+			return i;
+		}
     }
+
     // '0' key (main keyboard and numpad)
-    if (pressedKeys[48] || pressedKeys[96]) return array.length-1;
-    return index;
+    if (pressedKeys[48]) {
+		if (on0){
+			z*=1.01;
+			on0=false;
+		}
+		return array.length-1;
+	}
+	return index;
 }
 function powerOf2(number)
 {
@@ -129,7 +139,6 @@ function switcher(gl, timeStamp, primitiveType, offset, count)
 	gl.uniform1f(maxitersAtributeLocations[curindex], maxiters);
 	gl.drawArrays(primitiveType, offset, count);
 }
-let on=true;
 function renderBoth(gl, timeStamp, primitiveType, offset, count) {
     // Left: Mandelbrot (center at -0.5/z)
     gl.useProgram(programs[0]);
@@ -368,7 +377,8 @@ function main() {
 				speed/=(pressedKeys[90] ? 1.1 : 1.0);
 
 				if (pressedKeys[82]){ // just press r and you are back to where you started
-					z=default_z;
+					if (curindex==array.length-1)z=default_z*1.01;
+					else z=default_z;
 					x=default_x;
 					y=default_y;
 					speed=default_speed;
