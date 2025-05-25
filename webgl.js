@@ -76,9 +76,10 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
 // the array of glsl files
 const array=[
-"./mandelbrot.glsl",
-"./jules.glsl",
-"./weierstrass.glsl"
+    "./mandelbrot.glsl",
+    "./jules.glsl",
+    "./weierstrass.glsl",
+    "./mandelbrot_jules_parallel.glsl" // <-- Add this line
 ];
 // the uniform arrays 
 const programs=[], 
@@ -96,11 +97,13 @@ let curindex=0;
 // function that switches the index 
 function newIndex(index)
 {
-	for (var i=0; i<array.length; i++){
-		if (pressedKeys[i+49])return i;
-	}
-	// or not if it did change
-	return index;
+    // 1-9 keys
+    for (var i=0; i<array.length-1; i++){
+        if (pressedKeys[i+49]) return i;
+    }
+    // '0' key (main keyboard and numpad)
+    if (pressedKeys[48] || pressedKeys[96]) return array.length-1;
+    return index;
 }
 function powerOf2(number)
 {
@@ -126,6 +129,36 @@ function switcher(gl, timeStamp, primitiveType, offset, count)
 	gl.uniform1f(maxitersAtributeLocations[curindex], maxiters);
 	gl.drawArrays(primitiveType, offset, count);
 }
+let on=true;
+function renderBoth(gl, timeStamp, primitiveType, offset, count) {
+    // Left: Mandelbrot (center at -0.5/z)
+    gl.useProgram(programs[0]);
+    gl.viewport(0, 0, gl.canvas.width / 2, gl.canvas.height);
+    gl.uniform1f(timeUniformLocations[0], timeStamp / 1000.0);
+    gl.uniform2f(resolutionUniformLocations[0], gl.canvas.width / 2, gl.canvas.height);
+    gl.uniform3f(posUniformLocaions[0], x - (0.5 / z), y, z);
+    gl.uniform3f(rotUniformLocaions[0], rx, ry, rz);
+    gl.uniform2f(abAtributeLocations[0], A, B);
+    gl.uniform1f(MSAAAtributeLocations[0], MSAA);
+    gl.uniform1f(maxitersAtributeLocations[0], maxiters);
+    gl.drawArrays(primitiveType, offset, count);
+
+    // Right: Jules (center at +0.5/z)
+    gl.useProgram(programs[1]);
+    gl.viewport(gl.canvas.width / 2, 0, gl.canvas.width / 2, gl.canvas.height);
+    gl.uniform1f(timeUniformLocations[1], timeStamp / 1000.0);
+    gl.uniform2f(resolutionUniformLocations[1], gl.canvas.width / 2, gl.canvas.height);
+    gl.uniform3f(posUniformLocaions[1], x, y, z); 
+    gl.uniform3f(rotUniformLocaions[1], rx, ry, rz);
+    gl.uniform2f(abAtributeLocations[1], A, B);
+    gl.uniform1f(MSAAAtributeLocations[1], MSAA);
+    gl.uniform1f(maxitersAtributeLocations[1], maxiters);
+    gl.drawArrays(primitiveType, offset, count);
+
+    // Restore viewport to full canvas for next frame
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+}
+
 // MAIN
 function main() {
 // Get A WebGL context
@@ -156,7 +189,8 @@ function main() {
 		fetch("./vertex.glsl"), 
 		fetch(array[0]), 
 		fetch(array[1]),
-		fetch(array[2])
+		fetch(array[2]),
+		fetch(array[3]) // <-- Add this line
 	]).then((values) => {
 			let result = [];
 			for (const i in values){
@@ -249,17 +283,40 @@ function main() {
 			var offset = 0;
 			var count = 6;
 
-			function renderLoop(timeStamp) { 
-		// set uniforms 
+			let sideBySide = false; // Add this at the top level (outside renderLoop)
+			window.addEventListener('keydown', function(e) {
+				// '0' key (main keyboard and numpad)
+				if ((e.keyCode === 48 || e.key === '0') && !sideBySide) {
+					sideBySide = true;
+				}
+				// Number keys 1-9 (main keyboard and numpad)
+				if (
+					((e.keyCode >= 49 && e.keyCode <= 57) || (e.keyCode >= 97 && e.keyCode <= 105)) 
+					&& sideBySide
+				) {
+					sideBySide = false;
+				}
+			});
+
+			function renderLoop(timeStamp) {
+				let oldindex = curindex;
+				curindex = newIndex(curindex);
+
+				// Use switcher for all shaders, including the parallel one
 				switcher(gl, timeStamp, primitiveType, offset, count);
-			
-		// recursive invocation
-			
-      //recursive call to renderLoop
-			window.requestAnimationFrame(renderLoop);
-			// incrementation of values from line 1-2
+
+				window.requestAnimationFrame(renderLoop);
+
+				// incrementation of values from line 1-2
 				z/=(pressedKeys[32] ? 1.0+speed : 1.0);
 				z*=(pressedKeys[16] ? 1.0+speed : 1.0);
+
+				// Clamp z to avoid underflow/overflow
+				z = Math.max(0.0001, Math.min(z, 1000));
+
+				// Clamp x and y to avoid runaway values
+				x = Math.max(-1e6, Math.min(x, 1e6));
+				y = Math.max(-1e6, Math.min(y, 1e6));
 				// booooo math formula bla bla bla 
 				x+=
 					z*
@@ -320,12 +377,12 @@ function main() {
 					ry=default_ry;
 					A=.5;
 					B=3;
+					on=true;
 				}
 				// checking if index changed or nah
-				let oldindex=curindex;
+				oldindex=curindex;
 				curindex=newIndex(curindex);
 				if (curindex!=oldindex)switcher(gl, timeStamp, primitiveType, offset, count);
-
 			}
 
 			// begin the render loop
