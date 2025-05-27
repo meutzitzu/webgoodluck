@@ -13,7 +13,7 @@ uniform float u_MSAA;
 uniform float u_maxiters;
 #define pi radians(180)
 
-// idk why this is here I think for colors
+// colors
 vec3 hsv2rgb( in vec3 c ){
     vec3 rgb = clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),
                              6.0)-3.0)-1.0,
@@ -23,7 +23,6 @@ vec3 hsv2rgb( in vec3 c ){
     return c.z * mix(vec3(1.0), rgb, c.y);
 }
 
-// man WTF is this shit and why do we need it?
 float random(vec2 st)
 {
     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
@@ -53,12 +52,12 @@ void main()
 	uv *= u_pos.z;
 //	uv*=1.0;
 	uv += u_pos.xy;
-	// how many times it recalculates the pixel or someting like that
+	// how many times it recalculates the pixel 
 	//int MSAA = u_MSAA;
 	int l = 0;
 //	int maxiters = int(floor(min(10.0*u_time, 512)));
 //	int maxiters =  int(min(12.0*u_time , 256));
-	// maximum iterations (just read the fucking variable)
+	// maximum iterations (just read variable)
 	//int maxiters = 128;
 	float h = 0.0;
 	// The For
